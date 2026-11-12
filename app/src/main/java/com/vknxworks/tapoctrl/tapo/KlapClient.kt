@@ -28,9 +28,9 @@ sealed class TapoException(message: String, cause: Throwable? = null) : Exceptio
     class NotLocal : TapoException("Not a local address")
     /** No reply, or the connection broke. */
     class Unreachable(cause: Throwable?) : TapoException("Unreachable", cause)
-    /** The device answered but knows a different account (or none of the saved hashes). */
+    /** The device answered but doesn't accept your saved Tapo account. TapoCtrl stops there; it tries nothing else. */
     class WrongAccount : TapoException("Wrong account")
-    /** No account saved yet, and the device didn't take the setup defaults. */
+    /** No account saved yet: TapoCtrl doesn't contact the device at all. */
     class NoAccount : TapoException("No account")
     /** Older firmware with the securePassthrough protocol, which TapoCtrl doesn't speak yet. */
     class LegacyFirmware : TapoException("Legacy firmware")
@@ -85,9 +85,6 @@ class KlapClient(
     private var cookie: String? = null
     private var expiresAt = 0L
 
-    /** Which login the device accepted last: "account", "default" (setup credentials) or null. */
-    @Volatile var loginKind: String? = null
-        private set
 
     fun reset() {
         session = null
@@ -148,6 +145,9 @@ class KlapClient(
 
     private fun handshake(): KlapSession {
         reset()
+        // Only your own account: without it there's nothing to try, so the device isn't contacted.
+        val account = accountHashes()
+        if (account.isEmpty()) throw TapoException.NoAccount()
         val local = ByteArray(16).also { random.nextBytes(it) }
         val h1 = try {
             LanHttp.post(ip, "/app/handshake1", local, null)
@@ -160,10 +160,7 @@ class KlapClient(
         val remote = h1.body.copyOfRange(0, 16)
         val server = h1.body.copyOfRange(16, 48)
         val sessionCookie = parseCookie(h1.cookies)
-        val account = accountHashes()
-        val auth = KlapCrypto.match(account, local, remote, server)
-            ?: KlapCrypto.match(DefaultLogins.hashes, local, remote, server)
-            ?: throw if (account.isEmpty()) TapoException.NoAccount() else TapoException.WrongAccount()
+        val auth = chooseAuth(account, local, remote, server)
         cookie = sessionCookie.first
         val h2 = try {
             LanHttp.post(ip, "/app/handshake2", KlapCrypto.clientHash(auth, local, remote), cookie)
@@ -171,7 +168,6 @@ class KlapClient(
             throw TapoException.Unreachable(e)
         }
         if (h2.code != 200) throw TapoException.WrongAccount()
-        loginKind = if (account.any { it === auth }) "account" else "default"
         val s = KlapSession(local, remote, auth.hash)
         session = s
         // Renew a little before the device's own TIMEOUT (seconds; 24 h when it doesn't say).
@@ -191,6 +187,16 @@ class KlapClient(
          */
         fun retriesAfterBrokenConnection(method: String): Boolean = TapoMethods.isRead(method)
 
+        /**
+         * Picks the login for a handshake1 reply. Only the hashes of your own saved account are ever checked; there
+         * are no built-in, blank or setup accounts. If none of them matches, it's [TapoException.WrongAccount]
+         * and the handshake stops (no handshake2, no other attempts).
+         */
+        fun chooseAuth(account: List<AuthHash>, local: ByteArray, remote: ByteArray, server: ByteArray): AuthHash {
+            if (account.isEmpty()) throw TapoException.NoAccount()
+            return KlapCrypto.match(account, local, remote, server) ?: throw TapoException.WrongAccount()
+        }
+
         /** "TP_SESSIONID=…;TIMEOUT=86400" → ("TP_SESSIONID=…", 86400). */
         fun parseCookie(headers: List<String>): Pair<String?, Long?> {
             var id: String? = null
@@ -205,17 +211,5 @@ class KlapClient(
             }
             return id to timeout
         }
-    }
-}
-
-/**
- * Logins some firmware accepts besides your account: a blank account (devices that were never set up or were
- * reset), and TP-Link's published setup accounts for Tapo and Kasa devices. They're tried only after your own
- * account doesn't match; they never leave the phone except as a handshake hash sent to your device.
- */
-object DefaultLogins {
-    val hashes: List<AuthHash> by lazy {
-        listOf("" to "", "test@tp-link.net" to "test", "kasa@tp-link.net" to "kasaSetup")
-            .flatMap { (u, p) -> KlapCrypto.authHashes(u, p) }
     }
 }

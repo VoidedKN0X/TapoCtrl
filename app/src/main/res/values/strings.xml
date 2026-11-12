@@ -29,7 +29,7 @@
     <!-- Errors -->
     <string name="err_not_local">That isn\'t an address on your home network. TapoCtrl only connects to private addresses such as 192.168.x.x or 10.x.x.x.</string>
     <string name="err_unreachable">No answer. Is the device plugged in and on the same Wi-Fi as this phone?</string>
-    <string name="err_wrong_account">The device didn\'t accept your Tapo account. Check the email and password under Tapo account.</string>
+    <string name="err_wrong_account">This device doesn\'t accept your Tapo account; check the email and password under Tapo account.</string>
     <string name="err_no_account">Enter your Tapo account first, so TapoCtrl can talk to this device.</string>
     <string name="err_legacy">This device uses older firmware TapoCtrl doesn\'t support yet. Updating its firmware may help.</string>
     <string name="err_device">The device refused the request (error %1$d).</string>

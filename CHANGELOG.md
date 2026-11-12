@@ -12,7 +12,7 @@ The first release of TapoCtrl: control your Tapo plugs and bulbs on your home ne
 
 - **Devices** in a grid or list, each with its state and a big on/off button. Refreshes when you open the app and when you pull down.
 - **Add by IP address, or scan your Wi-Fi network** with TP-Link's local discovery and a quick check of every address. Devices that move to a new address are found again by their MAC address.
-- **Tapo account kept as hashes only:** your email and password are turned into the hashes the devices check and are never stored; the hashes are encrypted with a key in the phone's secure hardware.
+- **Tapo account kept as hashes only:** your email and password are turned into the hashes the devices check and are never stored; the hashes are encrypted with a key in the phone's secure hardware. TapoCtrl only ever uses your own account: no built-in or setup accounts, and if a device doesn't accept yours it says so and stops.
 - **Lights:** brightness, colour temperature, and hue and saturation for colour bulbs and light strips.
 - **Energy** for plugs that measure it (such as the P110 and P115): power now, today and this month, with an estimated cost from your electricity price.
 - **Rename** a device, and a **device info** page with model, firmware and hardware version, MAC address, Wi-Fi signal and IP address.
