@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tapo plugs and bulbs only speak plain HTTP on the local network (KLAP encrypts the content itself).
+     Android's network security config can't name address ranges, so cleartext is allowed here and the
+     app's own code (net/LanAddress.kt) refuses every address that isn't private or link-local before
+     opening a connection. No user-installed certificate authorities are trusted. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

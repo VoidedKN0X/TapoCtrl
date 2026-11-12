@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shell texts for this app -->
+    <string name="settings_subtitle">Tapo account, energy tariff and privacy</string>
+    <string name="app_lock_subtitle">Ask for an app PIN (and optionally your fingerprint) when opening TapoCtrl.</string>
+    <string name="app_lock_footer">TapoCtrl only talks to devices on your home network. It never contacts TP-Link or any other server, and has no analytics or tracking.</string>
+    <string name="lock_prompt_subtitle">Your devices</string>
+    <string name="lock_forgot_body">The PIN can\'t be recovered. TapoCtrl will forget your Tapo account hashes and your device list, reset its settings and turn the app lock off. Your plugs and bulbs themselves aren\'t changed.</string>
+
+    <!-- Home -->
+    <string name="home_title">Devices</string>
+    <plurals name="device_count">
+        <item quantity="one">%1$d device</item>
+        <item quantity="other">%1$d devices</item>
+    </plurals>
+    <string name="add_device">Add a device</string>
+    <string name="show_list">Show as list</string>
+    <string name="show_grid">Show as grid</string>
+    <string name="empty_title">No devices yet</string>
+    <string name="empty_body">Add your Tapo plugs and bulbs by their address, or scan your Wi-Fi network for them.</string>
+    <string name="power">Power</string>
+    <string name="status_on">On</string>
+    <string name="status_off">Off</string>
+    <string name="status_offline">No answer</string>
+    <string name="status_sign_in">Check account</string>
+    <string name="status_old_firmware">Older firmware</string>
+    <string name="status_unknown">Connecting</string>
+
+    <!-- Errors -->
+    <string name="err_not_local">That isn\'t an address on your home network. TapoCtrl only connects to private addresses such as 192.168.x.x or 10.x.x.x.</string>
+    <string name="err_unreachable">No answer. Is the device plugged in and on the same Wi-Fi as this phone?</string>
+    <string name="err_wrong_account">The device didn\'t accept your Tapo account. Check the email and password under Tapo account.</string>
+    <string name="err_no_account">Enter your Tapo account first, so TapoCtrl can talk to this device.</string>
+    <string name="err_legacy">This device uses older firmware TapoCtrl doesn\'t support yet. Updating its firmware may help.</string>
+    <string name="err_device">The device refused the request (error %1$d).</string>
+
+    <!-- Add -->
+    <string name="ip_label">Device address (IP)</string>
+    <string name="add">Add</string>
+    <string name="adding">Connecting…</string>
+    <string name="added">Added %1$s</string>
+    <string name="added_short">Added</string>
+    <string name="add_already">This device is already in your list.</string>
+    <string name="add_no_answer">Nothing answered at %1$s. Check the address and that the device is on.</string>
+    <string name="add_ip_hint">You\'ll find the address in your router\'s list of connected devices. Giving the device a fixed address there keeps it the same.</string>
+    <string name="scan_title">Scan network</string>
+    <string name="scan_network">Scan network</string>
+    <string name="scanning">Scanning…</string>
+    <string name="scan_subnet">Looks at %1$s</string>
+    <string name="scan_no_wifi">Connect this phone to your Wi-Fi to scan.</string>
+    <string name="scan_footer">The scan asks every address on this phone\'s Wi-Fi subnet whether it\'s a Tapo device, and sends TP-Link\'s local discovery broadcast. Nothing about your account is sent and nothing leaves your network.</string>
+    <string name="scan_none">No Tapo devices found</string>
+    <string name="scan_none_sub">Devices on another network or a guest Wi-Fi can\'t be found from here</string>
+    <string name="found_device">Tapo device</string>
+    <string name="found_legacy">older firmware</string>
+    <string name="found_camera">cameras aren\'t supported yet</string>
+
+    <!-- Account -->
+    <string name="account_title">Tapo account</string>
+    <string name="account_prompt_title">Enter your Tapo account</string>
+    <string name="account_prompt_body">Your devices only answer to the account they were set up with. Enter it once; it stays on this phone.</string>
+    <string name="account_intro">Your plugs and bulbs check the Tapo account they were set up with. Enter its email and password once. TapoCtrl turns them into the two hashes the devices check, keeps only those, and forgets the password.</string>
+    <string name="account_replace_intro">To change the account (for example after changing your Tapo password), enter it again.</string>
+    <string name="account_email">Email</string>
+    <string name="account_password">Password</string>
+    <string name="show_password">Show password</string>
+    <string name="hide_password">Hide password</string>
+    <string name="account_save">Save</string>
+    <string name="account_saved">Saved on this phone</string>
+    <string name="account_saved_sub">As hashes only, encrypted with a key in the phone\'s secure hardware</string>
+    <string name="account_not_saved">Not entered yet</string>
+    <string name="account_saved_footer">Neither your email nor your password is stored.</string>
+    <string name="account_saved_toast">Account saved</string>
+    <string name="account_save_failed">Couldn\'t save the account. Try again.</string>
+    <string name="account_privacy">TapoCtrl never sends your email or password anywhere: not to TP-Link, not to any server. Only your own devices on this network see a hash of them, during their encrypted handshake.</string>
+    <string name="account_forget">Forget account</string>
+    <string name="account_forget_title">Forget your Tapo account?</string>
+    <string name="account_forget_body">TapoCtrl deletes the saved hashes and their key. Your devices keep working, but TapoCtrl can\'t control them until you enter the account again.</string>
+    <string name="account_open_sub">Enter or check your account</string>
+
+    <!-- Device -->
+    <string name="refresh">Refresh</string>
+    <string name="power_on_big">On</string>
+    <string name="power_off_big">Off</string>
+    <string name="power_unknown_big">–</string>
+    <string name="tap_to_turn_off">Tap to turn off</string>
+    <string name="tap_to_turn_on">Tap to turn on</string>
+    <string name="connecting">Connecting…</string>
+    <string name="no_state">State unknown</string>
+    <string name="group_light">Light</string>
+    <string name="brightness">Brightness</string>
+    <string name="colour_temperature">Colour temperature</string>
+    <string name="colour_mode">Colour</string>
+    <string name="colour">Colour</string>
+    <string name="hue">Hue</string>
+    <string name="saturation">Saturation</string>
+    <string name="group_energy">Energy</string>
+    <string name="power_now">Power now</string>
+    <string name="energy_today">Today</string>
+    <string name="energy_month">This month</string>
+    <string name="runtime_today">On today</string>
+    <string name="energy_footer">Measured by the plug. Costs are an estimate from your tariff in Settings.</string>
+    <string name="energy_footer_no_tariff">Measured by the plug. Set your electricity price in Settings to see an estimated cost.</string>
+    <string name="group_device">Device</string>
+    <string name="rename">Rename</string>
+    <string name="device_info">Device info</string>
+    <string name="device_info_sub">Model, firmware, MAC address and signal</string>
+    <string name="firmware_update">Firmware update</string>
+    <string name="firmware_current">Version %1$s</string>
+    <string name="remove_device">Remove from TapoCtrl</string>
+    <string name="remove_device_sub">The device itself isn\'t reset</string>
+    <string name="remove_title">Remove this device?</string>
+    <string name="remove_body">TapoCtrl stops showing it. The device keeps its settings and stays on your Wi-Fi; you can add it again any time.</string>
+
+    <!-- Device info -->
+    <string name="unknown">Unknown</string>
+    <string name="group_network">Network</string>
+    <string name="info_name">Name</string>
+    <string name="info_model">Model</string>
+    <string name="info_type">Type</string>
+    <string name="info_firmware">Firmware version</string>
+    <string name="info_hardware">Hardware version</string>
+    <string name="info_overheated">Overheated</string>
+    <string name="info_overheated_sub">The device reports that it\'s too hot</string>
+    <string name="info_ip">IP address</string>
+    <string name="info_mac">MAC address</string>
+    <string name="info_wifi">Wi-Fi network</string>
+    <string name="info_signal">Signal</string>
+    <string name="info_signal_value">%1$d dBm (level %2$d of 3)</string>
+    <string name="info_protocol">Connection</string>
+    <string name="info_protocol_klap">KLAP, encrypted, on your local network</string>
+
+    <!-- Firmware -->
+    <string name="fw_installed">Installed version</string>
+    <string name="fw_footer">The device asks TP-Link itself whether there\'s a newer version and downloads TP-Link\'s signed firmware on its own. TapoCtrl only tells it to check and to install; it never handles the firmware file.</string>
+    <string name="fw_check">Check for update</string>
+    <string name="fw_checking">Checking…</string>
+    <string name="fw_check_again">Check again</string>
+    <string name="fw_up_to_date">This device is up to date.</string>
+    <string name="fw_new_version">New version</string>
+    <string name="fw_no_notes">TP-Link gave no release notes for this version.</string>
+    <string name="fw_install">Install update</string>
+    <string name="fw_confirm_title">Install the update?</string>
+    <string name="fw_confirm_body">The device downloads version %1$s from TP-Link and restarts. While it restarts, a plug briefly cuts power to whatever is plugged into it, and a bulb goes off for a moment. It may take a few minutes. Don\'t unplug it.</string>
+    <string name="fw_downloading">Downloading…</string>
+    <string name="fw_installing">Installing…</string>
+    <string name="fw_restarting">Restarting…</string>
+    <string name="fw_dont_unplug">Don\'t unplug the device. Leaving this page doesn\'t stop the update.</string>
+    <string name="fw_done">Updated. The device now runs version %1$s.</string>
+    <string name="fw_done_same">The device restarted and reports version %1$s. If that\'s still the old version, check again in a few minutes.</string>
+    <string name="fw_timeout">The device hasn\'t answered for 15 minutes. Check that it\'s plugged in, then open it again.</string>
+
+    <!-- Settings -->
+    <string name="group_devices">Devices</string>
+    <string name="layout">Home layout</string>
+    <string name="layout_grid">Grid</string>
+    <string name="layout_list">List</string>
+    <string name="tariff">Electricity price</string>
+    <string name="tariff_value">%1$s %2$s per kWh</string>
+    <string name="tariff_none">Not set</string>
+    <string name="tariff_hint">Price per kWh in %1$s</string>
+    <string name="tariff_footer">Used to estimate what plugs that measure energy (such as the P110 and P115) cost today and this month.</string>
+    <string name="currency">Currency</string>
+</resources>
