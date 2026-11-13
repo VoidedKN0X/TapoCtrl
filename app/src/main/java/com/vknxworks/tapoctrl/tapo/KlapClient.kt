@@ -131,15 +131,10 @@ class KlapClient(
         } catch (e: IllegalArgumentException) {
             if (retry && retriesAfterBrokenConnection(method)) throw Retry() else throw TapoException.Unreachable(e)
         }
-        val json = try {
-            Json.parseToJsonElement(plain.toString(Charsets.UTF_8)).jsonObject
-        } catch (e: Exception) {
-            throw TapoException.Unreachable(e)
-        }
-        val code = json["error_code"]?.jsonPrimitive?.int ?: 0
+        val (code, result) = parseReply(plain)
         if (code == SESSION_EXPIRED && retry) throw Retry()
         if (code != 0) throw TapoException.DeviceError(code)
-        return json["result"] ?: JsonNull
+        return result
     }
 
 
@@ -186,6 +181,18 @@ class KlapClient(
          * rejected the session before acting, so those are retried for every method.)
          */
         fun retriesAfterBrokenConnection(method: String): Boolean = TapoMethods.isRead(method)
+
+        /**
+         * A decrypted reply: (error_code, result). Anything that isn't the expected JSON object, including a
+         * non-numeric error code, is [TapoException.Unreachable], never an unexpected crash.
+         */
+        fun parseReply(plain: ByteArray): Pair<Int, JsonElement> = try {
+            val json = Json.parseToJsonElement(plain.toString(Charsets.UTF_8)).jsonObject
+            val code = json["error_code"]?.let { it.jsonPrimitive.int } ?: 0
+            code to (json["result"] ?: JsonNull)
+        } catch (e: Exception) {
+            throw TapoException.Unreachable(e)
+        }
 
         /**
          * Picks the login for a handshake1 reply. Only the hashes of your own saved account are ever checked; there

@@ -4,6 +4,21 @@ What changed in each TapoCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.1.1 (2026-11-13)
+
+A security and maintenance release. Nothing changes in how you use TapoCtrl, and TapoCtrl still never switches a plug or bulb on or off by itself.
+
+### Security
+
+- **More checks that TapoCtrl never changes a device on its own:** new automatic tests make sure power, brightness, colour, rename and firmware commands can only come from a tap, never from opening, resuming or refreshing a screen, and that TapoCtrl has nothing that runs in the background (no services, widgets, tiles or scheduled jobs).
+- **A broken reply from a device** (for example after a glitch on the network) now shows as "can't reach the device" instead of possibly closing the app.
+- **Your Tapo account key:** on phones with a separate security chip (StrongBox), a newly saved account is now protected by that chip. An account you already saved keeps working as it is.
+- The build tool download is now checked against its published checksum.
+
+### Performance
+
+- Updated Jetpack Compose, AndroidX and Kotlin libraries to their current versions.
+- Release builds drop debug logging.
 ## v0.1.0 (2026-11-12)
 
 The first release of TapoCtrl: control your Tapo plugs and bulbs on your home network, without the Tapo app and without TP-Link's cloud.

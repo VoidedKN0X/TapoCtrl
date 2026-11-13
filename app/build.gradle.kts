@@ -22,8 +22,8 @@ android {
         minSdk = 35
         targetSdk = 36
         // Bump both to publish a new release (see CHANGELOG.md).
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.1.1"
         // 64-bit ARM phones only (arm64-v8a), like every Ctrl app.
         ndk { abiFilters += listOf("arm64-v8a") }
     }
@@ -82,6 +82,9 @@ android {
     lint {
         abortOnError = false
         checkReleaseBuilds = false
+        // Compose lint (1.9+) flags every context.getString() in a composable function, including the ones in click
+        // handlers and callbacks that run long after composition (toasts, the fingerprint prompt). Those are fine.
+        disable += "LocalContextGetResourceValueCall"
     }
 }
 

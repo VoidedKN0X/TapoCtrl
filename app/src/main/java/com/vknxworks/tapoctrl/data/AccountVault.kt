@@ -1,6 +1,7 @@
 package com.vknxworks.tapoctrl.data
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import com.vknxworks.tapoctrl.tapo.AuthHash
@@ -24,6 +25,7 @@ import javax.crypto.spec.GCMParameterSpec
  */
 class AccountVault(context: Context) {
     private val file = File(context.noBackupFilesDir, "account.bin")
+    private val hasStrongBox = context.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)
     private var cache: List<AuthHash>? = null
 
     private val _saved = MutableStateFlow(file.exists())
@@ -87,16 +89,22 @@ class AccountVault(context: Context) {
     private fun key(): SecretKey {
         val ks = KeyStore.getInstance(KEYSTORE).apply { load(null) }
         (ks.getEntry(ALIAS, null) as? KeyStore.SecretKeyEntry)?.let { return it.secretKey }
-        val gen = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, KEYSTORE)
-        gen.init(
-            KeyGenParameterSpec.Builder(ALIAS, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
-                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .setKeySize(256)
-                .setRandomizedEncryptionRequired(true)
-                .build(),
-        )
-        return gen.generateKey()
+        // A new key goes into StrongBox (the phone's separate security chip) when there is one, otherwise into
+        // the regular hardware-backed Keystore. A key made earlier keeps working as it is.
+        fun make(strongBox: Boolean): SecretKey {
+            val gen = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, KEYSTORE)
+            gen.init(
+                KeyGenParameterSpec.Builder(ALIAS, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+                    .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                    .setKeySize(256)
+                    .setRandomizedEncryptionRequired(true)
+                    .setIsStrongBoxBacked(strongBox)
+                    .build(),
+            )
+            return gen.generateKey()
+        }
+        return if (hasStrongBox) runCatching { make(true) }.getOrElse { make(false) } else make(false)
     }
 
     private companion object {
