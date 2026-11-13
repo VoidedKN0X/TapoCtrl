@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.DriveFileRenameOutline
 import androidx.compose.material.icons.outlined.ErrorOutline
@@ -57,6 +58,7 @@ import com.vknxworks.tapoctrl.ui.components.StatTile
 import com.vknxworks.tapoctrl.ui.components.WarningCard
 import com.vknxworks.tapoctrl.ui.nav.AccountRoute
 import com.vknxworks.tapoctrl.ui.nav.DeviceInfoRoute
+import com.vknxworks.tapoctrl.ui.nav.EnergyRoute
 import com.vknxworks.tapoctrl.ui.nav.FirmwareRoute
 import com.vknxworks.tapoctrl.ui.nav.LocalNavigator
 import com.vknxworks.tapoctrl.ui.theme.CtrlColors
@@ -156,7 +158,19 @@ fun DeviceScreen(id: String) {
             }
 
             if (info != null && info.isLight) LightControls(info, ::send)
-            if (info?.isPlug == true && state.energySupported == true) EnergyGroup(state, settings)
+            if (info?.isPlug == true && state.energySupported == true) {
+                EnergyGroup(state, settings)
+                // Graphs of the plug's own energy history (reads only).
+                Group {
+                    GroupRow(
+                        stringResource(R.string.energy_history),
+                        stringResource(R.string.energy_history_sub),
+                        icon = Icons.Outlined.BarChart,
+                        showChevron = true,
+                        onClick = { nav.navigate(EnergyRoute(id)) },
+                    )
+                }
+            }
 
             Group(stringResource(R.string.group_device)) {
                 GroupRow(stringResource(R.string.rename), info?.nickname ?: device.name, icon = Icons.Outlined.DriveFileRenameOutline, showChevron = true, onClick = if (info != null) ({ renaming = true }) else null)
@@ -271,5 +285,6 @@ private fun EnergyGroup(state: DeviceState, settings: AppSettings) {
             color = CtrlColors.Muted,
             modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp),
         )
+
     }
 }

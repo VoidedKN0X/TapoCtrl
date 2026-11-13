@@ -161,4 +161,19 @@
     <string name="tariff_hint">Price per kWh in %1$s</string>
     <string name="tariff_footer">Used to estimate what plugs that measure energy (such as the P110 and P115) cost today and this month.</string>
     <string name="currency">Currency</string>
+
+    <!-- Energy history -->
+    <string name="energy_history">Energy use</string>
+    <string name="energy_history_sub">Today, 7 days, 30 days and 12 months, from the plug\'s own memory</string>
+    <string name="energy_range_today">Today</string>
+    <string name="energy_range_week">7 days</string>
+    <string name="energy_range_month">30 days</string>
+    <string name="energy_range_year">12 months</string>
+    <string name="energy_total">Total</string>
+    <string name="energy_peak">Highest</string>
+    <string name="energy_selected">Selected</string>
+    <string name="energy_no_data">The plug has no energy recorded for this period yet.</string>
+    <string name="energy_retry">Try again</string>
+    <string name="energy_chart_desc">Energy use, %1$s: %2$s in all. Tap a bar for its value.</string>
+    <string name="energy_history_footer">Read from the plug\'s own energy memory, on your network. Reading it never switches the plug or changes anything on it. Hours and days follow the plug\'s clock.</string>
 </resources>

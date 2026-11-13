@@ -18,6 +18,8 @@ object TapoMethods {
     const val GET_DEVICE_INFO = "get_device_info"
     const val GET_ENERGY_USAGE = "get_energy_usage"
     const val GET_CURRENT_POWER = "get_current_power"
+    /** Energy history (hourly, daily or monthly Wh) for the graphs. Read-only. */
+    const val GET_ENERGY_DATA = "get_energy_data"
     const val GET_LATEST_FW = "get_latest_fw"
     const val GET_FW_DOWNLOAD_STATE = "get_fw_download_state"
 
@@ -26,7 +28,7 @@ object TapoMethods {
     /** Install firmware: only after the confirmation dialog. Never with parameters (no custom URL). */
     const val FW_DOWNLOAD = "fw_download"
 
-    val READS: Set<String> = setOf(GET_DEVICE_INFO, GET_ENERGY_USAGE, GET_CURRENT_POWER, GET_LATEST_FW, GET_FW_DOWNLOAD_STATE)
+    val READS: Set<String> = setOf(GET_DEVICE_INFO, GET_ENERGY_USAGE, GET_CURRENT_POWER, GET_ENERGY_DATA, GET_LATEST_FW, GET_FW_DOWNLOAD_STATE)
 
     fun isRead(method: String): Boolean = method in READS
 }
@@ -58,6 +60,10 @@ object DeviceReads {
         if (now != null) usage = usage.copy(powerW = now)
         return usage
     }
+
+    /** One energy graph (today, 7 days, 30 days, 12 months) from the device's own history. */
+    suspend fun energyHistory(c: TapoCaller, range: EnergyRange, now: java.time.LocalDateTime): EnergySeries =
+        EnergyHistory.read(c.readOnly(), range, now)
 
     suspend fun latestFirmware(c: TapoCaller): FirmwareInfo = FirmwareInfo.parse(c.readOnly().call(TapoMethods.GET_LATEST_FW, null))
 

@@ -81,6 +81,48 @@ class NoAutomaticWritesTest {
         }
     }
 
+    /** The energy graphs only read: every range, new and old firmware, through a plug that fails on anything else. */
+    @Test fun energyGraphsOnlyRead() = kotlinx.coroutines.runBlocking {
+        for (hasEnergyData in listOf(true, false)) {
+            val sent = mutableListOf<String>()
+            val plug = TapoCaller { method, _ ->
+                sent += method
+                if (!TapoMethods.isRead(method) || method.startsWith("set_") || method.startsWith("fw_")) fail("The energy graphs sent $method")
+                when (method) {
+                    TapoMethods.GET_ENERGY_DATA -> if (hasEnergyData) kotlinx.serialization.json.Json.parseToJsonElement("""{"data":[1,2,3]}""") else throw TapoException.DeviceError(-1)
+                    else -> kotlinx.serialization.json.Json.parseToJsonElement("""{"past24h":[1],"past7d":[[1]],"past30d":[1],"past1y":[1]}""")
+                }
+            }
+            for (range in EnergyRange.entries) DeviceReads.energyHistory(plug, range, java.time.LocalDateTime.of(2026, 11, 13, 12, 0))
+            assertTrue(sent.isNotEmpty())
+            assertTrue("Only reads: $sent", sent.all { it == TapoMethods.GET_ENERGY_DATA || it == TapoMethods.GET_ENERGY_USAGE })
+        }
+        // The energy read is on the read-only list, and the read-only view still refuses writes.
+        assertTrue(TapoMethods.isRead(TapoMethods.GET_ENERGY_DATA))
+        try {
+            TapoCaller { _, _ -> fail("reached the device"); error("") }.readOnly().call(TapoMethods.SET_DEVICE_INFO, null)
+            fail("a write got through")
+        } catch (_: WriteRefused) {
+        }
+    }
+
+    /** The energy screen and its code never change a device and only use the read path. */
+    @Test fun energyScreenNeverChangesADevice() {
+        val files = sources().associateBy { it.name }
+        for (name in listOf("EnergyScreen.kt", "EnergyHistory.kt")) {
+            val text = files.getValue(name).readText()
+            assertFalse("$name changes a device", writeCalls.containsMatchIn(text) || text.contains("TapoMethods.SET") || text.contains("TapoMethods.FW"))
+            assertFalse("$name names a write", text.contains("set_") || text.contains("fw_download"))
+        }
+        assertTrue(files.getValue("EnergyScreen.kt").readText().contains("c.devices.energyHistory("))
+        val history = files.getValue("EnergyHistory.kt").readText()
+        assertTrue(history.substringAfter("suspend fun read(").contains(".readOnly()"))
+        val devices = files.getValue("Devices.kt").readText()
+        val fn = devices.substringAfter("suspend fun energyHistory(").substringBefore("suspend fun latestFirmware(")
+        assertTrue(fn.contains("DeviceReads.energyHistory("))
+        assertFalse(fn.contains("c.call("))
+    }
+
     @Test fun malformedRepliesAreErrorsNotCrashes() {
         for (bad in listOf("", "[]", "{\"error_code\":\"x\"}", "{\"error_code\":{}}", "not json")) {
             try {

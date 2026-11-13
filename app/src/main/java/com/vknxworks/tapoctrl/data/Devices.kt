@@ -10,6 +10,8 @@ import com.vknxworks.tapoctrl.tapo.DeviceInfo
 import com.vknxworks.tapoctrl.tapo.DeviceReads
 import com.vknxworks.tapoctrl.tapo.TapoMethods
 import com.vknxworks.tapoctrl.tapo.DownloadState
+import com.vknxworks.tapoctrl.tapo.EnergyRange
+import com.vknxworks.tapoctrl.tapo.EnergySeries
 import com.vknxworks.tapoctrl.tapo.EnergyUsage
 import com.vknxworks.tapoctrl.tapo.FirmwareInfo
 import com.vknxworks.tapoctrl.tapo.KlapClient
@@ -218,6 +220,12 @@ class DeviceRepository(private val context: Context, scope: CoroutineScope, priv
         } catch (e: TapoException) {
             // Unreachable for now; try again next time.
         }
+    }
+
+    /** An energy graph for a plug that measures energy. Only reads (get_energy_data, get_energy_usage). */
+    suspend fun energyHistory(id: String, range: EnergyRange): EnergySeries {
+        val c = current(id)?.let { client(it.ip) } ?: throw TapoException.NotLocal()
+        return DeviceReads.energyHistory(c, range, java.time.LocalDateTime.now())
     }
 
     suspend fun latestFirmware(id: String): FirmwareInfo {

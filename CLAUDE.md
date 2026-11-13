@@ -8,10 +8,11 @@ Local-network controller for TP-Link Tapo plugs and bulbs in the VKNXWorks Ctrl 
 - `tapo/KlapClient.kt`: one client per IP. handshake1 → match the server hash against the saved account only (v2, v1; `chooseAuth`) → handshake2 → session; re-handshakes on expiry (cookie TIMEOUT), 401/403, error 9999, a decrypt failure or a broken connection (once per call). `LanHttp` posts with `Proxy.NO_PROXY`, no redirects, and refuses non-private addresses.
 - `tapo/Discovery.kt`: UDP 20002 discovery (TDP header with CRC32, throwaway RSA public key made per scan) and the KLAP handshake1 probe over the phone's /24.
 - `tapo/DeviceInfo.kt`: lenient parsing of get_device_info, get_energy_usage, get_current_power, get_latest_fw, get_fw_download_state.
+- `tapo/EnergyHistory.kt`: the energy graphs (read-only): get_energy_data requests (hourly ≤ 8 days, daily from a quarter start, monthly from 1 January; local midnight sent as UTC seconds), parsing (values capped), assembling into 24/7/30/12 bars, and the get_energy_usage history lists (past24h/past7d/past30d/past1y) as fallback. `EnergyHistoryTest` uses recorded payloads; `NoAutomaticWritesTest` covers it.
 - `data/AccountVault.kt`: only the KLAP hashes, AES-256-GCM with an AndroidKeyStore key (StrongBox when the phone has it, else the regular Keystore), in `noBackupFilesDir`.
 - `data/Devices.kt`: the saved device list (JSON in DataStore), live state per device, all device commands.
 - `net/LanAddress.kt`: the private/link-local address check every connection goes through.
-- `ui/devices`: Home (grid/list, pull to refresh), Add (IP and scan), Account, Device, Device info, Firmware.
+- `ui/devices`: Home (grid/list, pull to refresh), Add (IP and scan), Account, Device, Energy (Compose Canvas bar charts), Device info, Firmware.
 
 ## Hard rules
 

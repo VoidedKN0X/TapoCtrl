@@ -4,6 +4,14 @@ What changed in each TapoCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.2.0 (2026-11-13)
+
+### New
+
+- **Energy graphs** for plugs that measure energy (such as the P110 and P115). On a plug's page, tap **Energy use** to see today hour by hour, the last 7 days and the last 30 days day by day, and the last 12 months month by month. Each graph shows the total, the highest hour, day or month, and an estimated cost if you've set your electricity price. Tap a bar to see its value.
+- The history comes from the plug's own memory, so it covers time when TapoCtrl wasn't open. Plugs with older firmware that keep their history differently are supported too.
+- **Still read-only:** looking at the graphs only reads from the plug. TapoCtrl still never switches a plug or bulb on or off by itself, and the automatic tests that check this now cover the energy graphs too.
+
 ## v0.1.1 (2026-11-13)
 
 A security and maintenance release. Nothing changes in how you use TapoCtrl, and TapoCtrl still never switches a plug or bulb on or off by itself.

@@ -15,6 +15,7 @@ import com.vknxworks.tapoctrl.ui.devices.AccountScreen
 import com.vknxworks.tapoctrl.ui.devices.AddDeviceScreen
 import com.vknxworks.tapoctrl.ui.devices.DeviceInfoScreen
 import com.vknxworks.tapoctrl.ui.devices.DeviceScreen
+import com.vknxworks.tapoctrl.ui.devices.EnergyScreen
 import com.vknxworks.tapoctrl.ui.devices.FirmwareScreen
 import com.vknxworks.tapoctrl.ui.devices.HomeScreen
 import com.vknxworks.tapoctrl.ui.settings.SettingsScreen
@@ -32,6 +33,7 @@ fun AppRoot() {
                 composable<AddRoute> { AddDeviceScreen() }
                 composable<AccountRoute> { AccountScreen() }
                 composable<DeviceRoute> { DeviceScreen(it.toRoute<DeviceRoute>().id) }
+                composable<EnergyRoute> { EnergyScreen(it.toRoute<EnergyRoute>().id) }
                 composable<DeviceInfoRoute> { DeviceInfoScreen(it.toRoute<DeviceInfoRoute>().id) }
                 composable<FirmwareRoute> { FirmwareScreen(it.toRoute<FirmwareRoute>().id) }
                 composable<YouRoute> { YouScreen() }
