@@ -5,6 +5,8 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.vknxworks.tapoctrl.data.crypto.DataKeyStore
+import com.vknxworks.tapoctrl.data.crypto.SealedText
 import com.vknxworks.tapoctrl.net.LanAddress
 import com.vknxworks.tapoctrl.tapo.DeviceInfo
 import com.vknxworks.tapoctrl.tapo.DeviceReads
@@ -17,17 +19,18 @@ import com.vknxworks.tapoctrl.tapo.FirmwareInfo
 import com.vknxworks.tapoctrl.tapo.KlapClient
 import com.vknxworks.tapoctrl.tapo.TapoException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -38,6 +41,8 @@ import java.util.UUID
 
 private val Context.deviceStore by preferencesDataStore(name = "devices")
 private val DEVICES = stringPreferencesKey("devices_json")
+/** A sealed device list that couldn't be opened and was set aside ("Start empty"); never read back by the app. */
+private val DEVICES_UNREADABLE = stringPreferencesKey("devices_json_unreadable")
 private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
 /** A device you added. Only what's needed to find it again and show it before it answers. */
@@ -69,12 +74,157 @@ sealed interface AddResult {
     data object NoAnswer : AddResult
 }
 
-class DeviceRepository(private val context: Context, scope: CoroutineScope, private val account: AccountVault) {
+/**
+ * The device list as it was last read from the DataStore. [unreadable]: it is encrypted and can't be opened
+ * (the key in the phone's secure storage is gone or changed); the stored value is then left exactly as it is.
+ */
+private class StoredDevices(val list: List<SavedDevice>, val unreadable: Boolean = false)
 
-    val devices: StateFlow<List<SavedDevice>> = context.deviceStore.data
-        .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
-        .map { p -> p[DEVICES]?.let { runCatching { json.decodeFromString<List<SavedDevice>>(it) }.getOrNull() } ?: emptyList() }
-        .stateIn(scope, SharingStarted.Eagerly, emptyList())
+/**
+ * The saved device list and everything asked of the devices.
+ *
+ * The list is one JSON text in the "devices" DataStore. It is encrypted at rest with the app's data key
+ * ([DataKeyStore], [SealedText]); a list from before encryption is still read, and is then replaced by its
+ * encrypted copy. When there is no data key to be had, the list is read and written as ordinary text, as before.
+ */
+class DeviceRepository(
+    private val context: Context,
+    private val scope: CoroutineScope,
+    private val account: AccountVault,
+    private val keys: DataKeyStore,
+) {
+    /** What's stored; null until the first read. */
+    private val stored = MutableStateFlow<StoredDevices?>(null)
+
+    private val _devices = MutableStateFlow<List<SavedDevice>>(emptyList())
+    val devices: StateFlow<List<SavedDevice>> = _devices
+
+    private val _loaded = MutableStateFlow(false)
+    /** False until the saved list was read (the key that opens it is asked from the secure hardware first). */
+    val loaded: StateFlow<Boolean> = _loaded
+
+    private val _unreadable = MutableStateFlow(false)
+    /**
+     * The saved list is encrypted and can't be opened. It is left exactly as it is, nothing is saved while this
+     * is true, and the app shows what happened instead of an empty list.
+     */
+    val unreadable: StateFlow<Boolean> = _unreadable
+
+    init {
+        scope.launch {
+            try {
+                // The key first, off the main thread (it asks the secure hardware, and is made at the first
+                // start), so opening and sealing the list below is plain arithmetic with a key in memory.
+                withContext(Dispatchers.IO) { keys.get(create = true) }
+                var sealTried = false
+                context.deviceStore.data
+                    .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
+                    .collect { p ->
+                        val raw = p[DEVICES]
+                        publish(read(raw))
+                        // A list from before encryption: replace it by its encrypted copy, once per start.
+                        if (!sealTried && raw != null && !SealedText.isSealed(raw)) {
+                            sealTried = true
+                            scope.launch { sealStored() }
+                        }
+                    }
+            } finally {
+                // Nothing waits for ever on a list that couldn't be read at all.
+                if (stored.value == null) publish(StoredDevices(emptyList()))
+            }
+        }
+    }
+
+    private fun publish(s: StoredDevices) {
+        _devices.value = s.list
+        _unreadable.value = s.unreadable
+        stored.value = s
+        _loaded.value = true
+    }
+
+    /**
+     * Reads a stored value. Only after the key was asked for in [init], so [DataKeyStore.get] answers from
+     * memory here. Text that isn't a device list reads as an empty list, as before.
+     */
+    private fun read(raw: String?): StoredDevices {
+        if (raw == null) return StoredDevices(emptyList())
+        val plain = if (SealedText.isSealed(raw)) {
+            val key = keys.get(create = false) ?: return StoredDevices(emptyList(), unreadable = true)
+            try {
+                SealedText.open(key, raw)
+            } catch (e: Exception) {
+                return StoredDevices(emptyList(), unreadable = true)
+            }
+        } else {
+            raw
+        }
+        return StoredDevices(runCatching { json.decodeFromString<List<SavedDevice>>(plain) }.getOrNull() ?: emptyList())
+    }
+
+    /** [plain] as it goes into the DataStore: encrypted when there's a data key, ordinary text otherwise. */
+    private fun seal(plain: String): String = keys.get(create = false)?.let { SealedText.seal(it, plain) } ?: plain
+
+    /**
+     * Replaces an ordinary stored list by its encrypted copy: the same text, sealed, checked by opening it
+     * again ([SealedText.seal]), and swapped in by the DataStore in one step (it writes a new file, syncs it and
+     * renames it over the old one). If anything fails the ordinary text simply stays in use.
+     */
+    private suspend fun sealStored() {
+        try {
+            context.deviceStore.edit { p ->
+                val raw = p[DEVICES] ?: return@edit
+                if (SealedText.isSealed(raw)) return@edit
+                val sealed = seal(raw)
+                if (sealed != raw) p[DEVICES] = sealed
+            }
+        } catch (e: IOException) {
+        }
+    }
+
+    /** The saved list, once it was read. */
+    private suspend fun saved(): List<SavedDevice> = stored.filterNotNull().first().list
+
+    /** Tries to open the saved list again, after [unreadable]. */
+    fun retry() {
+        scope.launch {
+            if (!_unreadable.value) return@launch
+            withContext(Dispatchers.IO) {
+                keys.reset()
+                keys.get(create = false)
+            }
+            try {
+                publish(read(context.deviceStore.data.first()[DEVICES]))
+            } catch (e: IOException) {
+            }
+        }
+    }
+
+    /**
+     * Gives up on a saved list that can't be opened and starts empty. With [keep] the sealed text is set aside
+     * under another name in the DataStore (and the key file as `data.key.unreadable`) instead of deleted. Does
+     * nothing unless the list is [unreadable].
+     */
+    suspend fun startEmpty(keep: Boolean) {
+        if (!_unreadable.value) return
+        try {
+            context.deviceStore.edit { p ->
+                val raw = p[DEVICES] ?: return@edit
+                // Only what still can't be opened.
+                if (!read(raw).unreadable) return@edit
+                if (keep) p[DEVICES_UNREADABLE] = raw
+                p.remove(DEVICES)
+            }
+        } catch (e: IOException) {
+            return
+        }
+        // A key that still works stays; one that's gone makes way for a new one.
+        withContext(Dispatchers.IO) {
+            if (keys.get(create = false) == null) {
+                keys.discard(keep)
+                keys.get(create = true)
+            }
+        }
+    }
 
     private val _states = MutableStateFlow<Map<String, DeviceState>>(emptyMap())
     val states: StateFlow<Map<String, DeviceState>> = _states
@@ -95,13 +245,23 @@ class DeviceRepository(private val context: Context, scope: CoroutineScope, priv
     }
 
     private suspend fun save(transform: (List<SavedDevice>) -> List<SavedDevice>) {
+        // After the first read, so the key is in memory (or known to be missing) by now.
+        saved()
+        var written: List<SavedDevice>? = null
         try {
             context.deviceStore.edit { p ->
-                val now = p[DEVICES]?.let { runCatching { json.decodeFromString<List<SavedDevice>>(it) }.getOrNull() } ?: emptyList()
-                p[DEVICES] = json.encodeToString(transform(now))
+                val now = read(p[DEVICES])
+                // Never over a list that couldn't be opened: it stays until it opens again or is given up.
+                if (now.unreadable) return@edit
+                val next = transform(now.list)
+                p[DEVICES] = seal(json.encodeToString(next))
+                written = next
             }
         } catch (e: IOException) {
+            return
         }
+        // Shown at once, so what's asked right after a save (a refresh of a device just added) finds it.
+        written?.let { publish(StoredDevices(it)) }
     }
 
     private fun setState(id: String, f: (DeviceState) -> DeviceState) {
@@ -109,13 +269,13 @@ class DeviceRepository(private val context: Context, scope: CoroutineScope, priv
     }
 
     private suspend fun current(id: String): SavedDevice? =
-        devices.value.firstOrNull { it.id == id } ?: devices.first().firstOrNull { it.id == id }
+        devices.value.firstOrNull { it.id == id } ?: saved().firstOrNull { it.id == id }
 
     /** Adds a device by address. It's added when it answers, even if your account doesn't fit yet. */
     suspend fun add(ip: String, hint: Found? = null): AddResult {
         val addr = LanAddress.parse(ip) ?: return AddResult.NotLocal
         val text = LanAddress.text(addr)
-        devices.first().firstOrNull { it.ip == text }?.let { return AddResult.AlreadyAdded }
+        saved().firstOrNull { it.ip == text }?.let { return AddResult.AlreadyAdded }
         val c = client(text)!!
         val info = try {
             DeviceReads.info(c)
@@ -151,6 +311,9 @@ class DeviceRepository(private val context: Context, scope: CoroutineScope, priv
     }
 
     suspend fun clearAll() {
+        // A list that couldn't even be opened goes too ("Forgot PIN?" deletes; nothing is set aside).
+        saved()
+        startEmpty(keep = false)
         save { emptyList() }
         _states.value = emptyMap()
         resetSessions()
@@ -158,7 +321,7 @@ class DeviceRepository(private val context: Context, scope: CoroutineScope, priv
 
     /** Asks every device for its state at once. */
     suspend fun refreshAll() = coroutineScope {
-        devices.first().map { d -> async { refresh(d.id) } }.awaitAll()
+        saved().map { d -> async { refresh(d.id) } }.awaitAll()
     }
 
     suspend fun refresh(id: String) {

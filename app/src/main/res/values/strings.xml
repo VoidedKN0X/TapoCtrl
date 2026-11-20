@@ -176,4 +176,12 @@
     <string name="energy_retry">Try again</string>
     <string name="energy_chart_desc">Energy use, %1$s: %2$s in all. Tap a bar for its value.</string>
     <string name="energy_history_footer">Read from the plug\'s own energy memory, on your network. Reading it never switches the plug or changes anything on it. Hours and days follow the plug\'s clock.</string>
+
+    <!-- Encryption at rest: the saved device list can't be opened -->
+    <string name="unreadable_title">Can\'t open your device list</string>
+    <string name="unreadable_body">Your device list is stored encrypted on this phone, and the key that opens it is missing from the phone\'s secure storage or no longer matches. Nothing has been deleted or changed, on this phone or on your devices. Try again first; restarting the phone can help too.</string>
+    <string name="unreadable_retry">Try again</string>
+    <string name="unreadable_start_empty">Start empty</string>
+    <string name="unreadable_start_empty_title">Start with an empty device list?</string>
+    <string name="unreadable_start_empty_body">Only do this if trying again doesn\'t help. The list that can\'t be opened is kept aside on this phone, not deleted, but TapoCtrl won\'t show it. You can then add your devices again; your Tapo account and the devices themselves aren\'t changed.</string>
 </resources>

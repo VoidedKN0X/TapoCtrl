@@ -3,6 +3,8 @@ package com.vknxworks.tapoctrl
 import android.content.Context
 import com.vknxworks.tapoctrl.data.AccountVault
 import com.vknxworks.tapoctrl.data.DeviceRepository
+import com.vknxworks.tapoctrl.data.crypto.DataKeyStore
+import com.vknxworks.tapoctrl.data.crypto.KeystoreWrapper
 import com.vknxworks.tapoctrl.data.lock.LockVault
 import com.vknxworks.tapoctrl.data.settings.AppSettings
 import com.vknxworks.tapoctrl.data.settings.SettingsRepository
@@ -26,7 +28,10 @@ class AppContainer(val context: Context) {
     /** Your Tapo account's KLAP hashes, encrypted with a Keystore key. */
     val account = AccountVault(context)
 
-    val devices = DeviceRepository(context, appScope, account)
+    /** The key that encrypts the saved device list at rest; itself kept by the Android Keystore. */
+    private val dataKey = DataKeyStore(context.filesDir, KeystoreWrapper("tapoctrl_data_at_rest"))
+
+    val devices = DeviceRepository(context, appScope, account, dataKey)
 
     init {
         AppLock.onLocked = { onLocked() }

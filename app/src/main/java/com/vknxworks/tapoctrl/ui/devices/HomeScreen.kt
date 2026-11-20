@@ -1,6 +1,7 @@
 package com.vknxworks.tapoctrl.ui.devices
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -21,10 +22,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Lightbulb
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,6 +48,7 @@ import com.vknxworks.tapoctrl.R
 import com.vknxworks.tapoctrl.container
 import com.vknxworks.tapoctrl.data.DeviceState
 import com.vknxworks.tapoctrl.data.SavedDevice
+import com.vknxworks.tapoctrl.ui.components.ConfirmDialog
 import com.vknxworks.tapoctrl.ui.components.CtrlCard
 import com.vknxworks.tapoctrl.ui.components.CtrlHeroCard
 import com.vknxworks.tapoctrl.ui.components.CtrlSquareButton
@@ -68,6 +72,9 @@ fun HomeScreen() {
     val nav = LocalNavigator.current
     val scope = rememberCoroutineScope()
     val devices by c.devices.devices.collectAsStateWithLifecycle()
+    val loaded by c.devices.loaded.collectAsStateWithLifecycle()
+    val unreadable by c.devices.unreadable.collectAsStateWithLifecycle()
+    var confirmStartEmpty by remember { mutableStateOf(false) }
     val states by c.devices.states.collectAsStateWithLifecycle()
     val settings by c.settings.settings.collectAsStateWithLifecycle()
     val accountSaved by c.account.saved.collectAsStateWithLifecycle()
@@ -98,7 +105,10 @@ fun HomeScreen() {
                         onClick = { c.appScope.launch { c.settings.update { it.copy(grid = !it.grid) } } },
                     )
                 }
-                CtrlSquareButton(Icons.Outlined.Add, stringResource(R.string.add_device), onClick = { nav.navigate(AddRoute) })
+                // Not while the saved list can't be opened: nothing could be saved next to it.
+                if (!unreadable) {
+                    CtrlSquareButton(Icons.Outlined.Add, stringResource(R.string.add_device), onClick = { nav.navigate(AddRoute) })
+                }
             },
         )
         PullToRefreshBox(
@@ -115,7 +125,25 @@ fun HomeScreen() {
             },
             modifier = Modifier.fillMaxSize(),
         ) {
-            if (devices.isEmpty()) {
+            if (!loaded) {
+                // The saved list is still being read: nothing yet, instead of "no devices" for a moment.
+                Box(Modifier.fillMaxSize())
+            } else if (unreadable) {
+                // The saved list is encrypted and can't be opened. Nothing was deleted or changed: say so, offer
+                // to try again, and only start empty when asked to.
+                Box(Modifier.fillMaxSize().navigationBarsPadding()) {
+                    MessageView(
+                        Icons.Outlined.Lock,
+                        stringResource(R.string.unreadable_title),
+                        stringResource(R.string.unreadable_body),
+                        actionLabel = stringResource(R.string.unreadable_retry),
+                        onAction = { c.devices.retry() },
+                    )
+                    TextButton(onClick = { confirmStartEmpty = true }, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)) {
+                        Text(stringResource(R.string.unreadable_start_empty), color = CtrlColors.Muted)
+                    }
+                }
+            } else if (devices.isEmpty()) {
                 Column(Modifier.fillMaxSize()) {
                     if (!accountSaved) AccountPrompt(Modifier.padding(horizontal = Gutter, vertical = 4.dp)) { nav.navigate(AccountRoute) }
                     MessageView(
@@ -145,6 +173,23 @@ fun HomeScreen() {
             }
         }
     }
+    if (confirmStartEmpty) {
+        StartEmptyDialog(onDismiss = { confirmStartEmpty = false }) {
+            confirmStartEmpty = false
+            scope.launch { c.devices.startEmpty(keep = true) }
+        }
+    }
+}
+
+@Composable
+private fun StartEmptyDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    ConfirmDialog(
+        title = stringResource(R.string.unreadable_start_empty_title),
+        body = stringResource(R.string.unreadable_start_empty_body),
+        confirm = stringResource(R.string.unreadable_start_empty),
+        onDismiss = onDismiss,
+        onConfirm = onConfirm,
+    )
 }
 
 @Composable

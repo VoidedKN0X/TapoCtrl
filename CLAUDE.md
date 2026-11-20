@@ -10,7 +10,8 @@ Local-network controller for TP-Link Tapo plugs and bulbs in the VKNXWorks Ctrl 
 - `tapo/DeviceInfo.kt`: lenient parsing of get_device_info, get_energy_usage, get_current_power, get_latest_fw, get_fw_download_state.
 - `tapo/EnergyHistory.kt`: the energy graphs (read-only): get_energy_data requests (hourly ≤ 8 days, daily from a quarter start, monthly from 1 January; local midnight sent as UTC seconds), parsing (values capped), assembling into 24/7/30/12 bars, and the get_energy_usage history lists (past24h/past7d/past30d/past1y) as fallback. `EnergyHistoryTest` uses recorded payloads; `NoAutomaticWritesTest` covers it.
 - `data/AccountVault.kt`: only the KLAP hashes, AES-256-GCM with an AndroidKeyStore key (StrongBox when the phone has it, else the regular Keystore), in `noBackupFilesDir`.
-- `data/Devices.kt`: the saved device list (JSON in DataStore), live state per device, all device commands.
+- `data/Devices.kt`: the saved device list (JSON in DataStore, sealed at rest), live state per device, all device commands.
+- `data/crypto`: encryption at rest (see below).
 - `net/LanAddress.kt`: the private/link-local address check every connection goes through.
 - `ui/devices`: Home (grid/list, pull to refresh), Add (IP and scan), Account, Device, Energy (Compose Canvas bar charts), Device info, Firmware.
 
@@ -25,6 +26,14 @@ Local-network controller for TP-Link Tapo plugs and bulbs in the VKNXWorks Ctrl 
 - **Google-free:** no Google libraries, services or SDKs, including transitive ones (CI checks `releaseRuntimeClasspath`). No WebView. Fonts are bundled.
 - **Telemetry-free:** no analytics or crash reporting.
 - arm64-v8a only. Every user-facing string goes in `strings.xml` (shared Ctrl strings in `strings_ctrl.xml`). Settings open only from the profile picture.
+
+## Encryption at rest
+
+- The device list (`devices_json` in the "devices" DataStore) is sealed with AES-256-GCM as text (`data/crypto/SealedText`: `TAPOCTRL-REST1:` + Base64 of the `SealedFile` bytes) under the data key (`DataKeyStore`: 32 random bytes in `filesDir/data.key`, wrapped by the Keystore key `tapoctrl_data_at_rest` through `KeystoreWrapper`/`KeystoreAes`; no user authentication). `account.bin` (`AccountVault`, its own Keystore key) and the app lock vault are separate and unchanged. Settings are not encrypted.
+- Reading must accept both sealed and ordinary text (`SealedText.isSealed`). Without a data key the list is read and written as ordinary text, as before.
+- Never overwrite a sealed list that can't be opened, never replace an existing `data.key`, and never create a Keystore key on the decrypt path (`KeystoreAes.existing`). A sealed list that can't be opened puts `DeviceRepository.unreadable` on: `save` writes nothing and Home shows "Can't open your device list".
+- Keystore work happens once, on `Dispatchers.IO`, in `DeviceRepository`'s start-up coroutine (and in `retry`/`startEmpty`); everything else uses the key from memory. `save` and `refreshAll` wait for the first read (`saved()`).
+- Storage only: nothing here touches `tapo/` or what is sent to a device. `SealedFileTest` covers the format and the key rules (`./gradlew :app:testDebugUnitTest`; CI doesn't run unit tests).
 
 ## Releasing
 

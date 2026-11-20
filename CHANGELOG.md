@@ -4,6 +4,22 @@ What changed in each TapoCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+Not released yet: these changes are on `main` and come with the next version. Built and checked by CI only: nothing here has been run on a phone, and TapoCtrl as a whole has never been tried on real Tapo devices. Nothing in how TapoCtrl talks to a device changed.
+
+### Security
+
+- **Your device list is now encrypted on the phone.** The list of devices you added (each one's address on your network, name, model, type and MAC address) was ordinary text in TapoCtrl's private settings storage, protected by Android's own storage encryption and app sandbox only. It is now also encrypted with AES-256-GCM. The key is 32 random bytes kept in memory while the app runs and stored in `data.key`, itself encrypted by an AES-256-GCM key in the Android Keystore (the phone's secure hardware, StrongBox when the phone has it) that can't be copied off the phone. It needs no PIN or fingerprint and works the same with the app lock on or off. This protects the list when the app's files are copied off the phone; it does not protect against something that can already read the running app's memory.
+- **Checked and left as they are:** your Tapo account hashes were already encrypted with their own Keystore key (`account.bin`); that file, its key and its format are untouched. The app lock's PIN data was already protected by the secure hardware. The settings (theme, grid or list, electricity price, lock options) stay ordinary: they say nothing about your devices. Live device state and energy history are never stored; they are read from the device each time.
+- **How the existing list is moved over:** at the first start the list is read as before. The same text is then encrypted, opened again and compared, and only if that matches does it replace the ordinary text, in one step of the settings storage (which writes a complete new file, flushes it and renames it over the old one). If anything fails, or the phone has no working Keystore, the ordinary text stays in use exactly as it was and TapoCtrl tries again at the next start. Killed halfway, the list is either still the ordinary text or already the encrypted copy. Both kinds stay readable: encrypted text starts with the marker `TAPOCTRL-REST1:`.
+- **If the key is ever gone** (it lives in this phone's secure hardware, so that could only happen if Android's Keystore loses it), TapoCtrl does not show an empty list and does not overwrite anything. Home shows "Can't open your device list" with **Try again**; nothing is saved while it shows, and the add button is hidden. **Start empty** (after a confirmation) keeps the unreadable list aside in the same storage under another name, and `data.key` as `data.key.unreadable`, instead of deleting them; you can then add your devices again (a scan finds them). "Forgot PIN?" on the lock screen still deletes the list, also one that can't be opened.
+- **Going back to an older build:** TapoCtrl 0.2.0 and older can't read the encrypted list. They show no devices, and the first device you add there replaces the encrypted list for good. TapoCtrl has no export, so after going back you add your devices again; your account and the devices themselves are not affected.
+
+### Changed
+
+- **No "No devices yet" flash at start, and the first refresh waits for the list.** Home stays blank for the moment it takes to read the saved list (now including asking the secure hardware for the key) instead of briefly showing the empty screen, and the refresh that runs when the app opens waits until the list is read instead of possibly finding nothing to refresh. Reading only, as before: nothing is ever sent to a device that changes it.
+
 ## v0.2.0 (2026-11-13)
 
 ### New
