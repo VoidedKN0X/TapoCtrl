@@ -1,7 +1,7 @@
 [versions]
-agp = "8.13.2"
+agp = "9.5.1"
 kotlin = "2.4.21"
-composeBom = "2026.06.01"
+composeBom = "2026.09.00"
 materialIcons = "1.7.8"
 activityCompose = "1.13.0"
 coreKtx = "1.18.0"
@@ -30,9 +30,10 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 
 junit = { module = "junit:junit", version.ref = "junit" }
+# Build classpath only (never in the APK): pins the Kotlin Gradle plugin that AGP 9's built-in Kotlin uses.
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
