@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="you_offline">Réseau domestique uniquement · pas de cloud</string>
+
+    <!-- Shell texts for this app -->
+    <string name="settings_subtitle">Compte Tapo, tarif d\'énergie et confidentialité</string>
+    <string name="app_lock_subtitle">Demander un code PIN (et éventuellement votre empreinte) à l\'ouverture de TapoCtrl.</string>
+    <string name="app_lock_footer">TapoCtrl communique uniquement avec les appareils de votre réseau domestique. Il ne contacte jamais TP-Link ni aucun autre serveur, et ne contient ni statistiques ni pistage.</string>
+    <string name="lock_prompt_subtitle">Vos appareils</string>
+    <string name="lock_forgot_body">Le code PIN ne peut pas être récupéré. TapoCtrl oubliera les hachages de votre compte Tapo et votre liste d\'appareils, réinitialisera ses paramètres et désactivera le verrouillage. Vos prises et ampoules elles-mêmes ne sont pas modifiées.</string>
+
+    <!-- Home -->
+    <string name="home_title">Appareils</string>
+    <plurals name="device_count">
+        <item quantity="one">%1$d appareil</item>
+        <item quantity="other">%1$d appareils</item>
+    </plurals>
+    <string name="add_device">Ajouter un appareil</string>
+    <string name="show_list">Afficher en liste</string>
+    <string name="show_grid">Afficher en grille</string>
+    <string name="empty_title">Aucun appareil pour l\'instant</string>
+    <string name="empty_body">Ajoutez vos prises et ampoules Tapo par leur adresse, ou recherchez-les sur votre réseau Wi-Fi.</string>
+    <string name="power">Alimentation</string>
+    <string name="status_on">Allumé</string>
+    <string name="status_off">Éteint</string>
+    <string name="status_offline">Pas de réponse</string>
+    <string name="status_sign_in">Vérifier le compte</string>
+    <string name="status_old_firmware">Ancien firmware</string>
+    <string name="status_unknown">Connexion</string>
+
+    <!-- Errors -->
+    <string name="err_not_local">Ce n\'est pas une adresse de votre réseau domestique. TapoCtrl se connecte uniquement à des adresses privées comme 192.168.x.x ou 10.x.x.x.</string>
+    <string name="err_unreachable">Pas de réponse. L\'appareil est-il branché et sur le même Wi-Fi que ce téléphone ?</string>
+    <string name="err_wrong_account">Cet appareil n\'accepte pas votre compte Tapo ; vérifiez l\'adresse e-mail et le mot de passe sous Compte Tapo.</string>
+    <string name="err_no_account">Saisissez d\'abord votre compte Tapo pour que TapoCtrl puisse communiquer avec cet appareil.</string>
+    <string name="err_legacy">Cet appareil utilise un ancien firmware que TapoCtrl ne prend pas encore en charge. Mettre à jour son firmware peut aider.</string>
+    <string name="err_device">L\'appareil a refusé la demande (erreur %1$d).</string>
+
+    <!-- Add -->
+    <string name="ip_label">Adresse de l\'appareil (IP)</string>
+    <string name="add">Ajouter</string>
+    <string name="adding">Connexion…</string>
+    <string name="added">%1$s ajouté</string>
+    <string name="added_short">Ajouté</string>
+    <string name="add_already">Cet appareil est déjà dans votre liste.</string>
+    <string name="add_no_answer">Aucune réponse à %1$s. Vérifiez l\'adresse et que l\'appareil est allumé.</string>
+    <string name="add_ip_hint">Vous trouverez l\'adresse dans la liste des appareils connectés de votre routeur. En y attribuant une adresse fixe à l\'appareil, elle ne changera plus.</string>
+    <string name="scan_title">Analyser le réseau</string>
+    <string name="scan_network">Analyser le réseau</string>
+    <string name="scanning">Analyse…</string>
+    <string name="scan_subnet">Analyse %1$s</string>
+    <string name="scan_no_wifi">Connectez ce téléphone à votre Wi-Fi pour lancer l\'analyse.</string>
+    <string name="scan_footer">L\'analyse demande à chaque adresse du sous-réseau Wi-Fi de ce téléphone s\'il s\'agit d\'un appareil Tapo, et envoie la diffusion de découverte locale de TP-Link. Rien sur votre compte n\'est envoyé et rien ne quitte votre réseau.</string>
+    <string name="scan_none">Aucun appareil Tapo trouvé</string>
+    <string name="scan_none_sub">Les appareils sur un autre réseau ou un Wi-Fi invité sont introuvables d\'ici</string>
+    <string name="found_device">Appareil Tapo</string>
+    <string name="found_legacy">ancien firmware</string>
+    <string name="found_camera">les caméras ne sont pas encore prises en charge</string>
+
+    <!-- Account -->
+    <string name="account_title">Compte Tapo</string>
+    <string name="account_prompt_title">Saisissez votre compte Tapo</string>
+    <string name="account_prompt_body">Vos appareils ne répondent qu\'au compte avec lequel ils ont été configurés. Saisissez-le une fois ; il reste sur ce téléphone.</string>
+    <string name="account_intro">Vos prises et ampoules vérifient le compte Tapo avec lequel elles ont été configurées. Saisissez son adresse e-mail et son mot de passe une fois. TapoCtrl les transforme en deux hachages que les appareils vérifient, ne conserve que ceux-ci et oublie le mot de passe.</string>
+    <string name="account_replace_intro">Pour changer de compte (par exemple après avoir changé votre mot de passe Tapo), saisissez-le à nouveau.</string>
+    <string name="account_email">E-mail</string>
+    <string name="account_password">Mot de passe</string>
+    <string name="show_password">Afficher le mot de passe</string>
+    <string name="hide_password">Masquer le mot de passe</string>
+    <string name="account_save">Enregistrer</string>
+    <string name="account_saved">Enregistré sur ce téléphone</string>
+    <string name="account_saved_sub">Uniquement sous forme de hachages, chiffrés avec une clé dans le matériel sécurisé du téléphone</string>
+    <string name="account_not_saved">Pas encore saisi</string>
+    <string name="account_saved_footer">Ni votre adresse e-mail ni votre mot de passe ne sont stockés.</string>
+    <string name="account_saved_toast">Compte enregistré</string>
+    <string name="account_save_failed">Impossible d\'enregistrer le compte. Réessayez.</string>
+    <string name="account_privacy">TapoCtrl n\'envoie jamais votre adresse e-mail ni votre mot de passe nulle part : ni à TP-Link, ni à aucun serveur. Seuls vos propres appareils sur ce réseau en voient un hachage, pendant leur échange de clés chiffré.</string>
+    <string name="account_forget">Oublier le compte</string>
+    <string name="account_forget_title">Oublier votre compte Tapo ?</string>
+    <string name="account_forget_body">TapoCtrl supprime les hachages enregistrés et leur clé. Vos appareils continuent de fonctionner, mais TapoCtrl ne peut plus les contrôler tant que vous n\'avez pas saisi à nouveau le compte.</string>
+    <string name="account_open_sub">Saisir ou vérifier votre compte</string>
+
+    <!-- Device -->
+    <string name="refresh">Actualiser</string>
+    <string name="power_on_big">Allumé</string>
+    <string name="power_off_big">Éteint</string>
+    <string name="power_unknown_big">–</string>
+    <string name="tap_to_turn_off">Touchez pour éteindre</string>
+    <string name="tap_to_turn_on">Touchez pour allumer</string>
+    <string name="connecting">Connexion…</string>
+    <string name="no_state">État inconnu</string>
+    <string name="group_light">Lumière</string>
+    <string name="brightness">Luminosité</string>
+    <string name="colour_temperature">Température de couleur</string>
+    <string name="colour_mode">Couleur</string>
+    <string name="colour">Couleur</string>
+    <string name="hue">Teinte</string>
+    <string name="saturation">Saturation</string>
+    <string name="group_energy">Énergie</string>
+    <string name="power_now">Puissance actuelle</string>
+    <string name="energy_today">Aujourd\'hui</string>
+    <string name="energy_month">Ce mois-ci</string>
+    <string name="runtime_today">Allumé aujourd\'hui</string>
+    <string name="energy_footer">Mesuré par la prise. Les coûts sont une estimation basée sur votre tarif dans Paramètres.</string>
+    <string name="energy_footer_no_tariff">Mesuré par la prise. Indiquez votre prix de l\'électricité dans Paramètres pour voir un coût estimé.</string>
+    <string name="group_device">Appareil</string>
+    <string name="rename">Renommer</string>
+    <string name="device_info">Infos sur l\'appareil</string>
+    <string name="device_info_sub">Modèle, firmware, adresse MAC et signal</string>
+    <string name="firmware_update">Mise à jour du firmware</string>
+    <string name="firmware_current">Version %1$s</string>
+    <string name="remove_device">Retirer de TapoCtrl</string>
+    <string name="remove_device_sub">L\'appareil lui-même n\'est pas réinitialisé</string>
+    <string name="remove_title">Retirer cet appareil ?</string>
+    <string name="remove_body">TapoCtrl ne l\'affiche plus. L\'appareil garde ses paramètres et reste sur votre Wi-Fi ; vous pouvez l\'ajouter à nouveau à tout moment.</string>
+
+    <!-- Device info -->
+    <string name="unknown">Inconnu</string>
+    <string name="group_network">Réseau</string>
+    <string name="info_name">Nom</string>
+    <string name="info_model">Modèle</string>
+    <string name="info_type">Type</string>
+    <string name="info_firmware">Version du firmware</string>
+    <string name="info_hardware">Version du matériel</string>
+    <string name="info_overheated">Surchauffe</string>
+    <string name="info_overheated_sub">L\'appareil signale qu\'il est trop chaud</string>
+    <string name="info_ip">Adresse IP</string>
+    <string name="info_mac">Adresse MAC</string>
+    <string name="info_wifi">Réseau Wi-Fi</string>
+    <string name="info_signal">Signal</string>
+    <string name="info_signal_value">%1$d dBm (niveau %2$d sur 3)</string>
+    <string name="info_protocol">Connexion</string>
+    <string name="info_protocol_klap">KLAP, chiffrée, sur votre réseau local</string>
+
+    <!-- Firmware -->
+    <string name="fw_installed">Version installée</string>
+    <string name="fw_footer">L\'appareil demande lui-même à TP-Link s\'il existe une version plus récente et télécharge seul le firmware signé de TP-Link. TapoCtrl lui dit seulement de vérifier et d\'installer ; il ne manipule jamais le fichier du firmware.</string>
+    <string name="fw_check">Rechercher une mise à jour</string>
+    <string name="fw_checking">Vérification…</string>
+    <string name="fw_check_again">Vérifier à nouveau</string>
+    <string name="fw_up_to_date">Cet appareil est à jour.</string>
+    <string name="fw_new_version">Nouvelle version</string>
+    <string name="fw_no_notes">TP-Link n\'a fourni aucune note de version pour cette version.</string>
+    <string name="fw_install">Installer la mise à jour</string>
+    <string name="fw_confirm_title">Installer la mise à jour ?</string>
+    <string name="fw_confirm_body">L\'appareil télécharge la version %1$s depuis TP-Link et redémarre. Pendant le redémarrage, une prise coupe brièvement le courant de ce qui y est branché, et une ampoule s\'éteint un instant. Cela peut prendre quelques minutes. Ne le débranchez pas.</string>
+    <string name="fw_downloading">Téléchargement…</string>
+    <string name="fw_installing">Installation…</string>
+    <string name="fw_restarting">Redémarrage…</string>
+    <string name="fw_dont_unplug">Ne débranchez pas l\'appareil. Quitter cette page n\'arrête pas la mise à jour.</string>
+    <string name="fw_done">Mis à jour. L\'appareil utilise maintenant la version %1$s.</string>
+    <string name="fw_done_same">L\'appareil a redémarré et indique la version %1$s. S\'il s\'agit toujours de l\'ancienne version, vérifiez à nouveau dans quelques minutes.</string>
+    <string name="fw_timeout">L\'appareil ne répond plus depuis 15 minutes. Vérifiez qu\'il est branché, puis ouvrez-le à nouveau.</string>
+
+    <!-- Settings -->
+    <string name="group_devices">Appareils</string>
+    <string name="layout">Disposition de l\'accueil</string>
+    <string name="layout_grid">Grille</string>
+    <string name="layout_list">Liste</string>
+    <string name="tariff">Prix de l\'électricité</string>
+    <string name="tariff_value">%1$s %2$s par kWh</string>
+    <string name="tariff_none">Non défini</string>
+    <string name="tariff_hint">Prix par kWh en %1$s</string>
+    <string name="tariff_footer">Sert à estimer ce que coûtent aujourd\'hui et ce mois-ci les prises qui mesurent l\'énergie (comme la P110 et la P115).</string>
+    <string name="currency">Devise</string>
+
+    <!-- Energy history -->
+    <string name="energy_history">Consommation d\'énergie</string>
+    <string name="energy_history_sub">Aujourd\'hui, 7 jours, 30 jours et 12 mois, depuis la mémoire de la prise</string>
+    <string name="energy_range_today">Aujourd\'hui</string>
+    <string name="energy_range_week">7 jours</string>
+    <string name="energy_range_month">30 jours</string>
+    <string name="energy_range_year">12 mois</string>
+    <string name="energy_total">Total</string>
+    <string name="energy_peak">Maximum</string>
+    <string name="energy_selected">Sélection</string>
+    <string name="energy_no_data">La prise n\'a encore enregistré aucune énergie pour cette période.</string>
+    <string name="energy_retry">Réessayer</string>
+    <string name="energy_chart_desc">Consommation d\'énergie, %1$s : %2$s au total. Touchez une barre pour voir sa valeur.</string>
+    <string name="energy_history_footer">Lu depuis la mémoire d\'énergie de la prise, sur votre réseau. Cette lecture ne commute jamais la prise et n\'y change rien. Les heures et les jours suivent l\'horloge de la prise.</string>
+
+    <!-- Encryption at rest: the saved device list can't be opened -->
+    <string name="unreadable_title">Impossible d\'ouvrir votre liste d\'appareils</string>
+    <string name="unreadable_body">Votre liste d\'appareils est stockée chiffrée sur ce téléphone, et la clé qui l\'ouvre est absente du stockage sécurisé du téléphone ou ne correspond plus. Rien n\'a été supprimé ni modifié, ni sur ce téléphone ni sur vos appareils. Réessayez d\'abord ; redémarrer le téléphone peut aussi aider.</string>
+    <string name="unreadable_retry">Réessayer</string>
+    <string name="unreadable_start_empty">Repartir de zéro</string>
+    <string name="unreadable_start_empty_title">Repartir avec une liste d\'appareils vide ?</string>
+    <string name="unreadable_start_empty_body">Ne le faites que si réessayer n\'aide pas. La liste qui ne s\'ouvre pas est mise de côté sur ce téléphone, pas supprimée, mais TapoCtrl ne l\'affichera pas. Vous pourrez ensuite ajouter à nouveau vos appareils ; votre compte Tapo et les appareils eux-mêmes ne sont pas modifiés.</string>
+    <!-- Power strips, hubs, wall switches -->
+    <string name="group_sockets">Prises</string>
+    <string name="sockets_footer">Chaque prise s\'allume et s\'éteint séparément. Un appui n\'envoie le changement que pour cette prise.</string>
+    <string name="socket_n">Prise %1$d</string>
+    <string name="group_hub_children">Capteurs et interrupteurs</string>
+    <string name="hub_children_footer">Ce que le hub indique sur les capteurs et interrupteurs qui y sont associés. Les capteurs sont uniquement affichés : TapoCtrl ne modifie pas leurs paramètres. Tirez vers le bas sur l\'accueil ou touchez Actualiser pour les dernières mesures.</string>
+    <string name="child_offline">Hors ligne</string>
+    <string name="child_low_battery">Batterie faible</string>
+    <string name="contact_open">Ouvert</string>
+    <string name="contact_closed">Fermé</string>
+    <string name="motion_detected">Mouvement</string>
+    <string name="motion_none">Aucun mouvement</string>
+
+    <!-- Device settings -->
+    <string name="group_device_settings">Paramètres de l\'appareil</string>
+    <string name="status_light">Voyant d\'état</string>
+    <string name="status_light_sub">Le petit voyant sur l\'appareil</string>
+    <string name="auto_off">Arrêt auto</string>
+    <string name="auto_off_sub">S\'éteint tout seul %1$d minutes après avoir été allumé</string>
+    <string name="auto_off_after">Arrêt auto après</string>
+    <string name="minutes_value">%1$d min</string>
+    <string name="power_cut">Après une coupure de courant</string>
+    <string name="power_cut_last">Dernier état</string>
+    <string name="power_cut_on">Allumé</string>
+    <string name="power_cut_off">Éteint</string>
+    <string name="needs_confirming">À confirmer sur votre appareil</string>
+    <string name="power_cut_footer">Après une coupure de courant est affiché tel que l\'appareil l\'indique. Le modifier n\'est pas encore proposé : la commande exacte n\'a pas pu être confirmée dans des projets Tapo open source reconnus, et TapoCtrl n\'envoie jamais de commandes devinées. Utilisez l\'application Tapo pour le modifier.</string>
+    <string name="group_time_on">Durée d\'allumage</string>
+    <string name="time_on_footer">Combien de temps l\'appareil a été allumé, selon son propre décompte.</string>
+    <string name="time_on_today">Aujourd\'hui</string>
+    <string name="time_on_7d">7 derniers jours</string>
+    <string name="time_on_30d">30 derniers jours</string>
+
+    <!-- Rooms and your own order -->
+    <string name="room">Pièce</string>
+    <string name="room_all">Toutes</string>
+    <string name="room_none">Sans pièce</string>
+    <string name="room_new">Nouvelle pièce…</string>
+    <string name="room_new_title">Nouvelle pièce</string>
+    <string name="arrange">Organiser les appareils</string>
+    <string name="arrange_done">Terminé</string>
+    <string name="arrange_hint">Déplacez les appareils vers le haut ou le bas et placez-les dans des pièces. Ceci est conservé uniquement sur ce téléphone ; rien n\'est envoyé aux appareils.</string>
+    <string name="move_up">Monter</string>
+    <string name="move_down">Descendre</string>
+    <!-- Energy CSV export -->
+    <string name="energy_export_csv">Exporter en CSV</string>
+    <string name="energy_export_saved">Fichier CSV enregistré</string>
+    <string name="energy_export_failed">Impossible d\'enregistrer le fichier CSV</string>
+    <!-- Effects and presets -->
+    <string name="group_effects">Effets et préréglages</string>
+    <string name="effects_footer">Les préréglages sont les réglages de lumière enregistrés sur l\'appareil dans l\'application Tapo. Les effets sont les effets intégrés de l\'appareil ; les effets d\'un ruban sont envoyés comme le définit le projet open source python-kasa. Chacun n\'est envoyé que lorsque vous le touchez.</string>
+    <string name="effect">Effet</string>
+    <string name="effect_off">Désactivé</string>
+    <string name="preset_n">Préréglage %1$d</string>
+    <!-- Settings export and import -->
+    <string name="settings_file_group">Fichier de paramètres</string>
+    <string name="settings_file_footer">Le fichier contient les paramètres de TapoCtrl et votre liste d\'appareils (adresses, noms, modèles, adresses MAC et pièces), jamais votre compte Tapo ni rien du verrouillage. Il n\'est pas chiffré : gardez-le en lieu sûr. L\'importation ajoute les appareils que vous n\'avez pas encore et reprend les pièces du fichier ; elle peut activer Masquer dans les captures d\'écran et Masquer dans les applis récentes et raccourcir le délai de verrouillage, mais ne les désactive jamais et n\'allonge jamais ce délai.</string>
+    <string name="settings_file_export">Exporter les paramètres</string>
+    <string name="settings_file_export_sub">Enregistrer les paramètres et la liste d\'appareils dans un fichier de votre choix</string>
+    <string name="settings_file_import">Importer les paramètres</string>
+    <string name="settings_file_import_sub">Les lire depuis un fichier de paramètres TapoCtrl</string>
+    <string name="settings_file_saved">Paramètres exportés</string>
+    <string name="settings_file_save_failed">Impossible d\'enregistrer le fichier</string>
+    <string name="settings_file_not_valid">Ce n\'est pas un fichier de paramètres TapoCtrl</string>
+    <string name="settings_file_too_new">Ce fichier provient d\'une version plus récente de TapoCtrl. Mettez d\'abord TapoCtrl à jour.</string>
+    <string name="settings_file_import_title">Importer les paramètres ?</string>
+    <string name="settings_file_import_body">Depuis un fichier créé le %1$s. Ceci va changer :\n\n%2$s</string>
+    <string name="settings_file_change">%1$s : %2$s → %3$s</string>
+    <string name="settings_file_no_changes">Ce fichier contient les mêmes paramètres et appareils que TapoCtrl actuellement (ou uniquement des paramètres qu\'une importation ne peut pas modifier). Rien à remplacer.</string>
+    <string name="settings_file_replace">Importer</string>
+    <string name="settings_file_close">Fermer</string>
+    <string name="settings_file_imported">Paramètres importés</string>
+    <string name="settings_file_on">Activé</string>
+    <string name="settings_file_off">Désactivé</string>
+    <string name="settings_file_layout">Disposition de l\'accueil</string>
+    <string name="settings_file_grid">Grille</string>
+    <string name="settings_file_list">Liste</string>
+    <string name="settings_file_tariff">Prix de l\'électricité</string>
+    <string name="settings_file_currency">Devise</string>
+    <plurals name="settings_file_devices_added">
+        <item quantity="one">%d appareil ajouté à votre liste</item>
+        <item quantity="other">%d appareils ajoutés à votre liste</item>
+    </plurals>
+    <plurals name="settings_file_rooms_changed">
+        <item quantity="one">Pièce modifiée pour %d appareil</item>
+        <item quantity="other">Pièces modifiées pour %d appareils</item>
+    </plurals>
+
+    <!-- Shared Ctrl series strings: the You page, Settings shell and the app lock -->
+    <string name="group_about">À propos</string>
+    <string name="support_title">Soutenir TapoCtrl</string>
+    <string name="bugs_title">Signaler un bug</string>
+    <string name="bugs_subtitle">Un problème ou une idée ? Ouvrez un ticket sur GitHub</string>
+    <string name="source_title">Code source</string>
+    <string name="licence_title">Licence</string>
+    <string name="about_footer">TapoCtrl %1$s · VKNXWorks</string>
+
+    <string name="settings">Paramètres</string>
+    <string name="you_title">Vous</string>
+    <string name="label_profile">Profil</string>
+    <string name="label_app">Application</string>
+    <string name="you_this_phone">Ce téléphone</string>
+    <string name="cancel">Annuler</string>
+    <string name="back">Retour</string>
+    <string name="selected">Sélectionné</string>
+    <string name="save">Enregistrer</string>
+    <string name="clear">Effacer</string>
+
+    <!-- Privacy and security: the shared Ctrl series app lock -->
+    <string name="group_privacy">Confidentialité et sécurité</string>
+    <string name="app_lock">Verrouillage de l\'application</string>
+    <string name="hide_screenshots">Masquer dans les captures d\'écran</string>
+    <string name="hide_screenshots_subtitle">Les captures et enregistrements d\'écran affichent un écran vide</string>
+    <string name="hide_recents">Masquer dans les applis récentes</string>
+    <string name="hide_recents_subtitle">L\'aperçu des applis récentes affiche une carte vide au lieu de l\'application</string>
+    <string name="lock_title">Verrouillé</string>
+    <string name="lock_prompt_title">Déverrouiller TapoCtrl</string>
+    <string name="lock_use_pin">Utiliser le code PIN</string>
+    <string name="lock_use_fingerprint">Utiliser l\'empreinte</string>
+    <string name="lock_fingerprint_failed">Impossible de déverrouiller avec votre empreinte. Utilisez votre code PIN.</string>
+    <string name="lock_fingerprint_changed">Une empreinte a été ajoutée ou supprimée. Déverrouillez avec votre code PIN, puis réactivez le déverrouillage par empreinte.</string>
+    <string name="lock_enter_pin">Saisissez votre code PIN</string>
+    <string name="lock_pin_required">Saisissez votre code PIN. Il est demandé après un redémarrage et toutes les 72 heures.</string>
+    <string name="lock_wrong_pin">Code PIN incorrect</string>
+    <string name="lock_too_many">Trop de tentatives. Réessayez dans %1$d s</string>
+    <string name="lock_forgot">Code PIN oublié ?</string>
+    <string name="lock_forgot_title">Code PIN oublié ?</string>
+    <string name="lock_forgot_confirm">Réinitialiser le verrouillage</string>
+    <string name="lock_choose_pin">Choisissez un code PIN pour l\'application</string>
+    <string name="lock_enable_intro">Au moins %1$d chiffres, différent du code PIN de votre téléphone. Si vous l\'oubliez, vous pouvez réinitialiser le verrouillage et les paramètres propres à TapoCtrl.</string>
+    <string name="lock_change_pin">Modifier le code PIN de l\'application</string>
+    <string name="lock_change_intro">Au moins %1$d chiffres, différent du code PIN de votre téléphone.</string>
+    <string name="lock_change_pin_subtitle">Au moins %1$d chiffres, distinct du code PIN du téléphone</string>
+    <string name="lock_turn_off">Désactiver le verrouillage</string>
+    <string name="lock_turn_off_intro">Saisissez le code PIN de l\'application pour désactiver le verrouillage.</string>
+    <string name="lock_enter_current_pin">Saisissez votre code PIN actuel</string>
+    <string name="lock_repeat_pin">Saisissez à nouveau le même code PIN</string>
+    <string name="lock_pin_too_easy">Trop facile à deviner. Choisissez un code PIN moins évident.</string>
+    <string name="lock_pin_mismatch">Les codes PIN ne correspondent pas. Recommencez.</string>
+    <string name="lock_save_failed">Impossible d\'enregistrer le code PIN. Réessayez.</string>
+    <string name="lock_ok">OK</string>
+    <string name="lock_next">Suivant</string>
+    <string name="lock_done">Terminé</string>
+    <string name="lock_delete_digit">Supprimer</string>
+    <string name="lock_fingerprint">Déverrouiller avec l\'empreinte</string>
+    <string name="lock_fingerprint_subtitle">Uniquement la biométrie forte, comme votre empreinte digitale, vérifiée par le matériel sécurisé du téléphone. Le code PIN reste nécessaire après un redémarrage et toutes les 72 heures.</string>
+    <string name="lock_fingerprint_unavailable">Configurez d\'abord une empreinte digitale sur ce téléphone</string>
+    <string name="lock_fingerprint_setup_failed">Impossible de configurer le déverrouillage par empreinte</string>
+    <string name="lock_fingerprint_enable_title">Activer le déverrouillage par empreinte</string>
+    <string name="lock_fingerprint_enable_subtitle">Confirmez votre empreinte digitale</string>
+    <string name="lock_again">Reverrouiller</string>
+    <string name="lock_again_immediately">Dès que vous quittez l\'application</string>
+    <string name="lock_again_1m">Après 1 minute d\'absence</string>
+    <string name="lock_again_5m">Après 5 minutes d\'absence</string>
+    <string name="lock_again_15m">Après 15 minutes d\'absence</string>
+    <string name="lock_again_1h">Après 1 heure d\'absence</string>
+    <string name="lock_again_restart">Uniquement au redémarrage de l\'application</string>
+</resources>

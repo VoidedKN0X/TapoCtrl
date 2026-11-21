@@ -30,7 +30,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Never switches anything on its own:** opening the app, refreshing, scanning and adding devices only read their state. A device changes only when you tap its own control (power button, slider, rename) or confirm a firmware update. No schedules, automations or "restore last state"
 - **Your account stays on the phone:** you enter your Tapo email and password once; TapoCtrl keeps only the two hashes the devices check, encrypted with a key in the phone's secure hardware. The password is never stored
 - **App lock** with its own PIN and optional fingerprint unlock, and **Hide in screenshots** / **Hide in recent apps** (all off until you turn them on)
-- **In English or Dutch:** TapoCtrl follows your phone's language. With the phone set to Dutch it is in Dutch (written for Flanders, informal "je"); otherwise English. Model names, units and technical terms stay as they are
+- **In English, Dutch, French or German:** TapoCtrl follows your phone's language. With the phone set to Dutch it is in Dutch (written for Flanders, informal "je"), set to French it is in French (formal "vous", as Android itself), set to German it is in German (informal "du"); otherwise English. You can also pick one of these for TapoCtrl alone under Android's Settings > Apps > TapoCtrl > Language. Model names, units and technical terms stay as they are
 - **Ctrl / Signal look**, shared by every Ctrl app: dark and light, high contrast, one violet accent, Space Grotesk and JetBrains Mono
 
 ## What works, and what doesn't yet
