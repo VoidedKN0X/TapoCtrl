@@ -237,6 +237,8 @@
     <string name="effects_footer">Presets are the light settings saved on the device in the Tapo app. Effects are the device\'s own built-in effects; a strip\'s effects are sent the way the open-source python-kasa project defines them. Each is sent only when you tap it.</string>
     <string name="effect">Effect</string>
     <string name="effect_off">Off</string>
+    <string name="effect_party">Party</string>
+    <string name="effect_relax">Relax</string>
     <string name="preset_n">Preset %1$d</string>
     <!-- Settings export and import -->
     <string name="settings_file_group">Settings file</string>

@@ -189,8 +189,12 @@ data class LightPreset(val brightness: Int, val colorTemp: Int?, val hue: Int?, 
     }
 }
 
-/** A colour bulb's built-in effect (L1 "Party", L2 "Relax"), from get_dynamic_light_effect_rules. */
-data class BulbEffect(val id: String, val name: String) {
+/**
+ * A colour bulb's built-in effect (L1 "Party", L2 "Relax"), from get_dynamic_light_effect_rules.
+ * [defaultName] is true when the bulb has no name of its own for it, so the screen can show the
+ * translated built-in name instead of the English [name].
+ */
+data class BulbEffect(val id: String, val name: String, val defaultName: Boolean = false) {
     companion object {
         private val DEFAULT_NAMES = mapOf("L1" to "Party", "L2" to "Relax")
 
@@ -199,8 +203,8 @@ data class BulbEffect(val id: String, val name: String) {
                 val o = e as? JsonObject ?: return@mapNotNull null
                 val id = o.str("id") ?: return@mapNotNull null
                 // An edited name is base64, an unedited one empty (python-kasa's LightEffect module).
-                val name = o.str("scene_name")?.takeIf { it.isNotBlank() }?.let(DeviceInfo::b64) ?: DEFAULT_NAMES[id] ?: id
-                BulbEffect(id, name)
+                val own = o.str("scene_name")?.takeIf { it.isNotBlank() }?.let(DeviceInfo::b64)
+                BulbEffect(id, own ?: DEFAULT_NAMES[id] ?: id, defaultName = own == null && id in DEFAULT_NAMES)
             }?.take(16).orEmpty()
     }
 }

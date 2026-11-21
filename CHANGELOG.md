@@ -4,6 +4,13 @@ What changed in each TapoCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+### Fixed
+
+- **Footer badges translated.** The "Google-free · Telemetry-free · arm64" line at the bottom of the You page was still in English in Dutch, French and German; it now reads "Google-vrij · Zonder telemetrie", "Sans Google · Sans télémétrie" and "Google-frei · Ohne Telemetrie", like the other Ctrl apps.
+- **Built-in bulb effects named in your language.** A colour bulb's two built-in effects, Party and Relax, were always shown with their English names. When the bulb has no name of its own for them, they now show as "Feest"/"Ontspannen", "Fête"/"Détente" or "Party"/"Entspannung". Effects you renamed in the Tapo app keep your name.
+
 ## v0.5.0 (2026-11-21)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.

@@ -239,6 +239,8 @@
     <string name="effects_footer">Les préréglages sont les réglages de lumière enregistrés sur l\'appareil dans l\'application Tapo. Les effets sont les effets intégrés de l\'appareil ; les effets d\'un ruban sont envoyés comme le définit le projet open source python-kasa. Chacun n\'est envoyé que lorsque vous le touchez.</string>
     <string name="effect">Effet</string>
     <string name="effect_off">Désactivé</string>
+    <string name="effect_party">Fête</string>
+    <string name="effect_relax">Détente</string>
     <string name="preset_n">Préréglage %1$d</string>
     <!-- Settings export and import -->
     <string name="settings_file_group">Fichier de paramètres</string>
@@ -282,6 +284,7 @@
     <string name="source_title">Code source</string>
     <string name="licence_title">Licence</string>
     <string name="about_footer">TapoCtrl %1$s · VKNXWorks</string>
+    <string name="label_footer_badges">Sans Google · Sans télémétrie · arm64</string>
 
     <string name="settings">Paramètres</string>
     <string name="you_title">Vous</string>

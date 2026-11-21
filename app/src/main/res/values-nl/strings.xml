@@ -210,6 +210,8 @@
     <string name="effects_footer">Voorinstellingen zijn de lichtinstellingen die in de Tapo-app op het toestel bewaard zijn. Effecten zijn de ingebouwde effecten van het toestel; de effecten van een strip worden verstuurd zoals het opensourceproject python-kasa ze beschrijft. Elk wordt alleen verstuurd wanneer je erop tikt.</string>
     <string name="effect">Effect</string>
     <string name="effect_off">Uit</string>
+    <string name="effect_party">Feest</string>
+    <string name="effect_relax">Ontspannen</string>
     <string name="preset_n">Voorinstelling %1$d</string>
     <string name="settings_file_group">Instellingenbestand</string>
     <string name="settings_file_footer">Het bestand bevat de instellingen van TapoCtrl en je lijst met toestellen (adressen, namen, modellen, MAC-adressen en kamers), nooit je Tapo-account en niets van de app-vergrendeling. Het is niet versleuteld, dus bewaar het ergens privé. Importeren voegt toestellen toe die je nog niet hebt en neemt kamers over uit het bestand; het kan Verbergen in schermafbeeldingen en Verbergen in recente apps aanzetten en de vergrendeltijd korter maken, maar zet ze nooit uit en laat de vergrendeling nooit langer wachten.</string>
@@ -250,6 +252,7 @@
     <string name="source_title">Broncode</string>
     <string name="licence_title">Licentie</string>
     <string name="about_footer">TapoCtrl %1$s · VKNXWorks</string>
+    <string name="label_footer_badges">Google-vrij · Zonder telemetrie · arm64</string>
     <string name="settings">Instellingen</string>
     <string name="you_title">Jij</string>
     <string name="label_profile">Profiel</string>

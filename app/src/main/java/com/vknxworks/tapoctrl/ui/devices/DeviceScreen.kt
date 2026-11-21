@@ -466,6 +466,14 @@ private fun EffectsGroup(id: String, state: DeviceState) {
     val bulbEffects = state.bulbEffects.orEmpty()
     if (presets.isEmpty() && stripNames.isEmpty() && bulbEffects.isEmpty()) return
     val off = stringResource(R.string.effect_off)
+    val party = stringResource(R.string.effect_party)
+    val relax = stringResource(R.string.effect_relax)
+    fun bulbEffectLabel(e: com.vknxworks.tapoctrl.tapo.BulbEffect): String = when {
+        !e.defaultName -> e.name
+        e.id == "L1" -> party
+        e.id == "L2" -> relax
+        else -> e.name
+    }
     Group(stringResource(R.string.group_effects), footer = stringResource(R.string.effects_footer)) {
         if (stripNames.isNotEmpty()) {
             val current = info.effect?.takeIf { it.enabled }?.name
@@ -484,7 +492,7 @@ private fun EffectsGroup(id: String, state: DeviceState) {
             val current = info.effect?.takeIf { it.enabled }?.id
             GroupChoice(
                 stringResource(R.string.effect),
-                listOf<String?>(null).map { it to off } + bulbEffects.map { it.id to it.name },
+                listOf<String?>(null).map { it to off } + bulbEffects.map { it.id to bulbEffectLabel(it) },
                 current,
                 icon = Icons.Outlined.AutoAwesome,
                 fallbackLabel = off,
