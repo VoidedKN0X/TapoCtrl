@@ -14,7 +14,10 @@ import com.vknxworks.tapoctrl.tapo.ChildReply
 import com.vknxworks.tapoctrl.tapo.Components
 import com.vknxworks.tapoctrl.tapo.DeviceInfo
 import com.vknxworks.tapoctrl.tapo.DeviceUsage
+import com.vknxworks.tapoctrl.tapo.BulbEffect
 import com.vknxworks.tapoctrl.tapo.LedInfo
+import com.vknxworks.tapoctrl.tapo.LightPreset
+import com.vknxworks.tapoctrl.tapo.StripEffects
 import com.vknxworks.tapoctrl.tapo.DeviceReads
 import com.vknxworks.tapoctrl.tapo.TapoMethods
 import com.vknxworks.tapoctrl.tapo.DownloadState
@@ -80,6 +83,9 @@ data class DeviceState(
     val led: LedInfo? = null,
     val autoOff: AutoOffConfig? = null,
     val usage: DeviceUsage? = null,
+    /** Light presets saved on the device, and a colour bulb's built-in effects. */
+    val presets: List<LightPreset>? = null,
+    val bulbEffects: List<BulbEffect>? = null,
 )
 
 sealed interface AddResult {
@@ -416,7 +422,14 @@ class DeviceRepository(
         val led = if (Components.LED in components) readOrNull { DeviceReads.led(c) } else null
         val autoOff = if (Components.AUTO_OFF in components) readOrNull { DeviceReads.autoOff(c) } else null
         val usage = if (Components.DEVICE_USAGE in components) readOrNull { DeviceReads.usage(c) } else null
-        setState(id) { it.copy(led = led ?: it.led, autoOff = autoOff ?: it.autoOff, usage = usage ?: it.usage) }
+        val presets = if (StripEffects.PRESET_COMPONENT in components) readOrNull { DeviceReads.presets(c) } else null
+        val bulbEffects = if (StripEffects.BULB_COMPONENT in components) readOrNull { DeviceReads.bulbEffects(c) } else null
+        setState(id) {
+            it.copy(
+                led = led ?: it.led, autoOff = autoOff ?: it.autoOff, usage = usage ?: it.usage,
+                presets = presets ?: it.presets, bulbEffects = bulbEffects ?: it.bulbEffects,
+            )
+        }
     }
 
     /**
@@ -440,6 +453,61 @@ class DeviceRepository(
             null
         } catch (e: TapoException) {
             refresh(id)
+            e
+        }
+    }
+
+    /** The built-in strip effects, read once from the app's own files. */
+    val stripEffects: List<JsonObject> by lazy {
+        runCatching { context.assets.open(StripEffects.ASSET).use { String(it.readBytes(), Charsets.UTF_8) } }
+            .map { StripEffects.parse(it) }.getOrDefault(emptyList())
+    }
+
+    /** Applies a saved light preset: set_device_info with its brightness and colour. Only from a tap on that preset. */
+    suspend fun applyPreset(id: String, p: LightPreset): TapoException? = set(id, buildJsonObject {
+        put("brightness", p.brightness)
+        if (p.hue != null && p.saturation != null && (p.colorTemp == null || p.colorTemp == 0)) {
+            put("hue", p.hue)
+            put("saturation", p.saturation)
+            put("color_temp", 0)
+        } else if (p.colorTemp != null) {
+            put("color_temp", p.colorTemp)
+        }
+    })
+
+    /**
+     * A light strip effect on ([name]) or off (null): set_lighting_effect with python-kasa's definition of it, at
+     * the strip's brightness. Only from a tap on that effect.
+     */
+    suspend fun setStripEffect(id: String, name: String?): TapoException? {
+        val d = current(id) ?: return null
+        val c = client(d.ip) ?: return TapoException.NotLocal()
+        val info = _states.value[id]?.info
+        val effects = stripEffects
+        val chosen = if (name != null) effects.firstOrNull { StripEffects.name(it) == name } else
+            effects.firstOrNull { StripEffects.name(it) == info?.effect?.name } ?: effects.firstOrNull()
+        chosen ?: return null
+        return try {
+            c.call(TapoMethods.SET_LIGHTING_EFFECT, StripEffects.request(chosen, on = name != null, brightness = info?.brightness))
+            refresh(id)
+            null
+        } catch (e: TapoException) {
+            e
+        }
+    }
+
+    /** A colour bulb's effect on ([effectId]) or off (null). Only from a tap on that effect. */
+    suspend fun setBulbEffect(id: String, effectId: String?): TapoException? {
+        val d = current(id) ?: return null
+        val c = client(d.ip) ?: return TapoException.NotLocal()
+        return try {
+            c.call(TapoMethods.SET_DYNAMIC_LIGHT_EFFECT_RULE_ENABLE, buildJsonObject {
+                put("enable", effectId != null)
+                if (effectId != null) put("id", effectId)
+            })
+            refresh(id)
+            null
+        } catch (e: TapoException) {
             e
         }
     }

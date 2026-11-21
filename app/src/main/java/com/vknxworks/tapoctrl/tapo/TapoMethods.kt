@@ -32,6 +32,10 @@ object TapoMethods {
     const val GET_AUTO_OFF_CONFIG = "get_auto_off_config"
     /** How long the device was on today, in the last 7 and 30 days. Read-only. */
     const val GET_DEVICE_USAGE = "get_device_usage"
+    /** The light presets saved on a bulb or strip. Read-only. */
+    const val GET_PRESET_RULES = "get_preset_rules"
+    /** A colour bulb's built-in effects (Party, Relax). Read-only. */
+    const val GET_DYNAMIC_LIGHT_EFFECT_RULES = "get_dynamic_light_effect_rules"
 
     /** Change the device: only after a tap on that device's control. */
     const val SET_DEVICE_INFO = "set_device_info"
@@ -46,10 +50,15 @@ object TapoMethods {
      * Only set_device_info from a tap on that socket's switch is ever wrapped in it.
      */
     const val CONTROL_CHILD = "control_child"
+    /** A light strip effect (python-kasa's built-in effect definitions): only from a tap on that effect. */
+    const val SET_LIGHTING_EFFECT = "set_lighting_effect"
+    /** A colour bulb's effect on or off: only from a tap on that effect. */
+    const val SET_DYNAMIC_LIGHT_EFFECT_RULE_ENABLE = "set_dynamic_light_effect_rule_enable"
 
     val READS: Set<String> = setOf(
         GET_DEVICE_INFO, GET_ENERGY_USAGE, GET_CURRENT_POWER, GET_ENERGY_DATA, GET_LATEST_FW, GET_FW_DOWNLOAD_STATE,
         COMPONENT_NEGO, GET_CHILD_DEVICE_LIST, GET_LED_INFO, GET_AUTO_OFF_CONFIG, GET_DEVICE_USAGE,
+        GET_PRESET_RULES, GET_DYNAMIC_LIGHT_EFFECT_RULES,
     )
 
     fun isRead(method: String): Boolean = method in READS
@@ -110,6 +119,12 @@ object DeviceReads {
 
     suspend fun autoOff(c: TapoCaller): AutoOffConfig =
         AutoOffConfig.parse(c.readOnly().call(TapoMethods.GET_AUTO_OFF_CONFIG, kotlinx.serialization.json.buildJsonObject { put("start_index", kotlinx.serialization.json.JsonPrimitive(0)) }))
+
+    suspend fun presets(c: TapoCaller): List<LightPreset> =
+        LightPreset.parse(c.readOnly().call(TapoMethods.GET_PRESET_RULES, kotlinx.serialization.json.buildJsonObject { put("start_index", kotlinx.serialization.json.JsonPrimitive(0)) }))
+
+    suspend fun bulbEffects(c: TapoCaller): List<BulbEffect> =
+        BulbEffect.parse(c.readOnly().call(TapoMethods.GET_DYNAMIC_LIGHT_EFFECT_RULES, kotlinx.serialization.json.buildJsonObject { put("start_index", kotlinx.serialization.json.JsonPrimitive(0)) }))
 
     suspend fun usage(c: TapoCaller): DeviceUsage = DeviceUsage.parse(c.readOnly().call(TapoMethods.GET_DEVICE_USAGE, null))
 

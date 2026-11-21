@@ -85,11 +85,11 @@ class ReadOnlyPathsTest {
             if (f.name != "TapoMethods.kt") {
                 assertFalse("${f.name} names a write method directly", text.contains("\"set_device_info\"") || text.contains("\"fw_download\""))
             }
-            val writes = Regex("""TapoMethods\.(SET_DEVICE_INFO|FW_DOWNLOAD|SET_LED_INFO|SET_AUTO_OFF_CONFIG|CONTROL_CHILD)""").findAll(text).count()
+            val writes = Regex("""TapoMethods\.(SET_DEVICE_INFO|FW_DOWNLOAD|SET_LED_INFO|SET_AUTO_OFF_CONFIG|CONTROL_CHILD|SET_LIGHTING_EFFECT|SET_DYNAMIC_LIGHT_EFFECT_RULE_ENABLE)""").findAll(text).count()
             when (f.name) {
                 // set_device_info (the device and, wrapped in control_child, one socket), fw_download,
-                // set_led_info and set_auto_off_config: each from one user action.
-                "Devices.kt" -> assertEquals("Devices.kt: the write call sites", 6, writes)
+                // set_led_info, set_auto_off_config and the two effect calls: each from one user action.
+                "Devices.kt" -> assertEquals("Devices.kt: the write call sites", 8, writes)
                 else -> assertEquals("${f.name} sends a write", 0, writes)
             }
         }

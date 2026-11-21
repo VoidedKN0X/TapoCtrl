@@ -163,3 +163,57 @@ object ChildReply {
         if (code != 0) throw TapoException.DeviceError(code)
     }
 }
+
+/** One light preset saved on the device: brightness, and colour temperature or hue and saturation when it has them. */
+data class LightPreset(val brightness: Int, val colorTemp: Int?, val hue: Int?, val saturation: Int?) {
+    companion object {
+        /**
+         * get_preset_rules: `{"states":[{"brightness":50,"color_temp":2700,"hue":0,"saturation":0}, …]}`, or on
+         * brightness-only bulbs `{"brightness":[10,30,50,…]}` (python-kasa's LightPreset module). States that hold an
+         * effect instead of a brightness are skipped.
+         */
+        fun parse(r: JsonElement): List<LightPreset> {
+            val o = r.obj()
+            (o["states"] as? JsonArray)?.let { list ->
+                return list.mapNotNull { e ->
+                    val s = e as? JsonObject ?: return@mapNotNull null
+                    val b = s.int("brightness") ?: return@mapNotNull null
+                    LightPreset(b.coerceIn(1, 100), s.int("color_temp")?.takeIf { it > 0 }, s.int("hue"), s.int("saturation"))
+                }.take(MAX)
+            }
+            return (o["brightness"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.intOrNull?.coerceIn(1, 100) }
+                ?.map { LightPreset(it, null, null, null) }?.take(MAX).orEmpty()
+        }
+
+        private const val MAX = 16
+    }
+}
+
+/** A colour bulb's built-in effect (L1 "Party", L2 "Relax"), from get_dynamic_light_effect_rules. */
+data class BulbEffect(val id: String, val name: String) {
+    companion object {
+        private val DEFAULT_NAMES = mapOf("L1" to "Party", "L2" to "Relax")
+
+        fun parse(r: JsonElement): List<BulbEffect> =
+            (r.obj()["rule_list"] as? JsonArray)?.mapNotNull { e ->
+                val o = e as? JsonObject ?: return@mapNotNull null
+                val id = o.str("id") ?: return@mapNotNull null
+                // An edited name is base64, an unedited one empty (python-kasa's LightEffect module).
+                val name = o.str("scene_name")?.takeIf { it.isNotBlank() }?.let(DeviceInfo::b64) ?: DEFAULT_NAMES[id] ?: id
+                BulbEffect(id, name)
+            }?.take(16).orEmpty()
+    }
+}
+
+/** Which effect a light is showing, from get_device_info. */
+data class EffectState(val enabled: Boolean, val name: String?, val id: String?)
+
+/** A light strip's `lighting_effect`, or a colour bulb's `dynamic_light_effect_enable` and `_id`. */
+fun parseEffectState(info: JsonElement): EffectState? {
+    val o = info.obj()
+    o["lighting_effect"]?.obj()?.let { e ->
+        return EffectState((e.int("enable") ?: 0) != 0 || e.bool("enable") == true, e.str("name"), e.str("id"))
+    }
+    val dyn = o.bool("dynamic_light_effect_enable") ?: return null
+    return EffectState(dyn, null, o.str("dynamic_light_effect_id"))
+}

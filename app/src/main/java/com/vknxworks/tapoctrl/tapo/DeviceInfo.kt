@@ -33,6 +33,8 @@ data class DeviceInfo(
     val onTimeSeconds: Long?,
     /** What the device does after a power cut, when it says (plugs and switches). */
     val powerCut: PowerCutState? = null,
+    /** A light strip's or colour bulb's current effect, when it has effects. */
+    val effect: EffectState? = null,
 ) {
     val isLight: Boolean get() = type.contains("BULB", ignoreCase = true) || type.contains("LIGHT", ignoreCase = true)
     val isPlug: Boolean get() = type.contains("PLUG", ignoreCase = true)
@@ -78,6 +80,7 @@ data class DeviceInfo(
                 overheated = o.bool("overheated") == true || o.str("overheat_status").let { it != null && it != "normal" },
                 onTimeSeconds = (o["on_time"] as? JsonPrimitive)?.longOrNull,
                 powerCut = parsePowerCutState(o),
+                effect = parseEffectState(o),
             )
         }
 

@@ -48,6 +48,9 @@ import com.vknxworks.tapoctrl.tapo.ChildInfo
 import com.vknxworks.tapoctrl.tapo.ChildKind
 import com.vknxworks.tapoctrl.tapo.DeviceInfo
 import com.vknxworks.tapoctrl.tapo.PowerCutState
+import com.vknxworks.tapoctrl.tapo.StripEffects
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Palette
 import com.vknxworks.tapoctrl.ui.components.GroupChoice
 import com.vknxworks.tapoctrl.ui.components.GroupSwitch
 import androidx.compose.material.icons.outlined.DevicesOther
@@ -177,6 +180,7 @@ fun DeviceScreen(id: String) {
             }
 
             if (info != null && (info.isLight || info.isSwitch)) LightControls(info, ::send)
+            if (info != null && info.isLight && state != null) EffectsGroup(id, state)
             state?.children?.takeIf { it.isNotEmpty() }?.let { children -> ChildrenGroup(id, info, children) }
             if (info?.isPlug == true && state.energySupported == true) {
                 EnergyGroup(state, settings)
@@ -442,6 +446,67 @@ private fun DeviceSettingsGroup(id: String, state: DeviceState) {
             GroupRow(stringResource(R.string.time_on_today), value = hm(usage.todayMin))
             GroupRow(stringResource(R.string.time_on_7d), value = hm(usage.past7Min))
             GroupRow(stringResource(R.string.time_on_30d), value = hm(usage.past30Min))
+        }
+    }
+}
+
+/**
+ * Light presets saved on the device, and effects: a strip's built-in effects or a colour bulb's Party and Relax.
+ * Each is sent only when you tap it.
+ */
+@Composable
+private fun EffectsGroup(id: String, state: DeviceState) {
+    val context = LocalContext.current
+    val c = context.container
+    val scope = rememberCoroutineScope()
+    val info = state.info ?: return
+    val components = state.components.orEmpty()
+    val presets = state.presets.orEmpty()
+    val stripNames = if (StripEffects.COMPONENT in components) c.devices.stripEffects.map { StripEffects.name(it) } else emptyList()
+    val bulbEffects = state.bulbEffects.orEmpty()
+    if (presets.isEmpty() && stripNames.isEmpty() && bulbEffects.isEmpty()) return
+    val off = stringResource(R.string.effect_off)
+    Group(stringResource(R.string.group_effects), footer = stringResource(R.string.effects_footer)) {
+        if (stripNames.isNotEmpty()) {
+            val current = info.effect?.takeIf { it.enabled }?.name
+            GroupChoice(
+                stringResource(R.string.effect),
+                listOf<String?>(null).map { it to off } + stripNames.map { it to it },
+                current,
+                icon = Icons.Outlined.AutoAwesome,
+                fallbackLabel = off,
+                onPick = { name ->
+                    scope.launch { c.devices.setStripEffect(id, name)?.let { toast(context, errorMessage(context, it)) } }
+                },
+            )
+        }
+        if (bulbEffects.isNotEmpty()) {
+            val current = info.effect?.takeIf { it.enabled }?.id
+            GroupChoice(
+                stringResource(R.string.effect),
+                listOf<String?>(null).map { it to off } + bulbEffects.map { it.id to it.name },
+                current,
+                icon = Icons.Outlined.AutoAwesome,
+                fallbackLabel = off,
+                onPick = { effectId ->
+                    scope.launch { c.devices.setBulbEffect(id, effectId)?.let { toast(context, errorMessage(context, it)) } }
+                },
+            )
+        }
+        presets.forEachIndexed { i, p ->
+            val desc = listOfNotNull(
+                "${p.brightness} %",
+                p.colorTemp?.let { "$it K" },
+                if (p.hue != null && p.saturation != null && p.colorTemp == null) "${p.hue}° · ${p.saturation} %" else null,
+            ).joinToString(" · ")
+            GroupRow(
+                stringResource(R.string.preset_n, i + 1),
+                desc,
+                icon = Icons.Outlined.Palette,
+                onClick = {
+                    scope.launch { c.devices.applyPreset(id, p)?.let { toast(context, errorMessage(context, it)) } }
+                },
+            )
         }
     }
 }

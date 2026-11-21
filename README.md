@@ -14,9 +14,9 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 
 - **Your devices at a glance:** a grid or list of every plug and bulb with its state and a big on/off button. It refreshes when you open the app and when you pull down
 - **Add by address or scan:** type a device's IP address, or let TapoCtrl scan your Wi-Fi subnet (TP-Link's local discovery broadcast plus a quick check of every address). Devices that change address are found again by their MAC address
-- **Lights:** brightness, colour temperature, and hue and saturation on colour bulbs and light strips
+- **Lights:** brightness, colour temperature, and hue and saturation on colour bulbs and light strips, the presets saved on the light, a strip's 17 built-in effects and a colour bulb's Party and Relax effects
 - **Energy** on plugs that measure it (such as the P110 and P115): power right now, today's and this month's energy, and an estimated cost from the electricity price you set
-- **Energy graphs** on those plugs: today by the hour, the last 7 and 30 days by the day, and the last 12 months by the month, read from the plug's own energy memory (with a total, the highest bar and the estimated cost). Tap a bar for its value. Reading the history never changes anything on the plug
+- **Energy graphs** on those plugs: today by the hour, the last 7 and 30 days by the day, and the last 12 months by the month, read from the plug's own energy memory (with a total, the highest bar and the estimated cost). Tap a bar for its value, and export the graph as a CSV file. Reading the history never changes anything on the plug
 - **Power strips:** every socket of a strip (P300 and similar) with its own on/off switch
 - **Wall switches and dimmers** (S500, S500D, S505 and similar): on/off, and brightness on dimmers
 - **Hub sensors, read-only:** the temperature and humidity, contact (open/closed) and motion sensors paired with a Tapo hub (H100, H200), with low-battery and offline marks

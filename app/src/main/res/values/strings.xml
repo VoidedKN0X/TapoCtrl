@@ -228,4 +228,14 @@
     <string name="arrange_hint">Move devices up or down and put them in rooms. This is kept on this phone only; nothing is sent to the devices.</string>
     <string name="move_up">Move up</string>
     <string name="move_down">Move down</string>
+    <!-- Energy CSV export -->
+    <string name="energy_export_csv">Export as CSV</string>
+    <string name="energy_export_saved">CSV file saved</string>
+    <string name="energy_export_failed">Couldn\'t save the CSV file</string>
+    <!-- Effects and presets -->
+    <string name="group_effects">Effects and presets</string>
+    <string name="effects_footer">Presets are the light settings saved on the device in the Tapo app. Effects are the device\'s own built-in effects; a strip\'s effects are sent the way the open-source python-kasa project defines them. Each is sent only when you tap it.</string>
+    <string name="effect">Effect</string>
+    <string name="effect_off">Off</string>
+    <string name="preset_n">Preset %1$d</string>
 </resources>

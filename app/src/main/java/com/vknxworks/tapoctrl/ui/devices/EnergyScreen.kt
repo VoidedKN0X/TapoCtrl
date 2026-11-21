@@ -44,6 +44,16 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vknxworks.tapoctrl.R
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.runtime.rememberCoroutineScope
+import com.vknxworks.tapoctrl.tapo.EnergyCsv
+import com.vknxworks.tapoctrl.ui.components.CtrlSquareButton
+import com.vknxworks.tapoctrl.ui.lock.AppLock
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.vknxworks.tapoctrl.container
 import com.vknxworks.tapoctrl.tapo.EnergyBar
 import com.vknxworks.tapoctrl.tapo.EnergyRange
@@ -74,6 +84,22 @@ fun EnergyScreen(id: String) {
     var error by remember { mutableStateOf<TapoException?>(null) }
     var loading by remember { mutableStateOf(false) }
     var attempt by remember { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
+    // Writes the graph that's shown to a file you choose; nothing is sent to the plug.
+    val exportCsv = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
+        val shown = series
+        if (uri == null || shown == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openOutputStream(uri, "wt")?.use {
+                        it.write(EnergyCsv.write(shown, settings.tariffPerKwh, settings.currency).toByteArray())
+                    } ?: error("no file")
+                }.isSuccess
+            }
+            toast(context, context.getString(if (ok) R.string.energy_export_saved else R.string.energy_export_failed))
+        }
+    }
 
     // Reads only: get_energy_data (or get_energy_usage on older firmware), through the read-only path.
     LaunchedEffect(range, attempt) {
@@ -89,7 +115,18 @@ fun EnergyScreen(id: String) {
     }
 
     Column(Modifier.fillMaxSize()) {
-        ScreenTopBar(stringResource(R.string.energy_history))
+        ScreenTopBar(stringResource(R.string.energy_history)) {
+            CtrlSquareButton(
+                Icons.Outlined.FileDownload,
+                stringResource(R.string.energy_export_csv),
+                onClick = {
+                    val r = series?.range ?: return@CtrlSquareButton
+                    AppLock.expectReturn()
+                    exportCsv.launch("tapoctrl-energy-${r.name.lowercase()}-${java.time.LocalDate.now()}.csv")
+                },
+                enabled = series?.hasData == true,
+            )
+        }
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 24.dp)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 EnergyRange.entries.forEach { r ->
