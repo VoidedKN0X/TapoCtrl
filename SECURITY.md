@@ -20,8 +20,9 @@ Only the latest release gets security fixes. Please update before reporting, and
 TapoCtrl has no server and only talks to devices on your own network. So these count:
 
 - Any way for TapoCtrl to connect to an address outside your local network, or to TP-Link's cloud
-- Your Tapo email or password being stored, or the saved hashes being readable by other apps or ending up in backups
-- Mistakes in the KLAP implementation that weaken its encryption or let another device on the network pretend to be yours
+- Your Tapo email being stored, your password being stored when you didn't turn on "Keep the password for older firmware", or the saved account values being readable by other apps or ending up in backups
+- Mistakes in the KLAP, securePassthrough or camera (encrypt_type 3, TPAP/SPAKE2+) implementations that weaken their encryption or let another device on the network pretend to be yours
+- A camera connection that accepts a certificate other than the one you confirmed
 - A way to make a device install firmware from somewhere other than TP-Link's own update
 - Ways around the app lock, or protected screens showing up in screenshots when they shouldn't
 - Weaknesses in the app lock PIN

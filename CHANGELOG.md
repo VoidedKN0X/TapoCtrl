@@ -6,6 +6,21 @@ To publish a new version: bump `versionCode` and `versionName` in `app/build.gra
 
 ## Unreleased
 
+### New
+
+- **Tapo cameras** (such as the C200). The scan now offers **Add** for cameras, and typing a camera's address works too. Before anything is sent, TapoCtrl shows the SHA-256 fingerprint of the certificate the camera made itself; the camera is added only when you tap **Trust and add**, and from then on TapoCtrl accepts only that exact certificate for it (if it ever changes, TapoCtrl stops and says so). A camera shows on Home with its privacy mode, and its page has:
+  - **Privacy mode** on or off (`setLensMaskConfig`, as python-kasa and pytapo send it).
+  - **Pan and tilt** on cameras that can (`ptz`): arrow buttons that turn the camera one step per tap (`motorMove`, python-kasa's steps of 30 and 10), and the **saved positions** from the camera, one tap to turn to each (`getPresetConfig` / `motorMoveToPreset`). Which way the left and right arrows turn **needs confirming on your device**: python-kasa and the tapo crate disagree on it.
+  - **Restart camera** after a confirmation (`rebootDevice`, as pytapo sends it), and the model, firmware, hardware, MAC address, address and certificate fingerprint.
+  - TapoCtrl picks the camera's login by itself, as pytapo does: TPAP (SPAKE2+ on P-256 with AES-128-CCM, for recent firmware), the "encrypt_type 3" login (python-kasa), or the older hashed login. The camera user is always "admin" with your Tapo account's password, the camera's own login for that account; there are no built-in or default passwords. With encrypt_type 3 and TPAP the camera proves it knows your password before TapoCtrl uses the session. No live video, recordings or detection settings.
+- **Older plug and bulb firmware (securePassthrough).** Devices that don't have KLAP yet now work: TapoCtrl notices it at the first step of the KLAP handshake (before anything else is sent) and switches to the older protocol by itself (RSA-1024 key exchange, login_device, AES-CBC; as python-kasa and plugp100 do it). Devices that announce login version 2 in the scan get only hashes; others get login version 1 first, which needs the password itself (see below), then version 2.
+- **What is stored, and a new choice on the Tapo account screen.** To talk to cameras and older firmware, TapoCtrl now also keeps, encrypted exactly like the KLAP hashes (AES-256-GCM with a key in the phone's secure hardware, dropped from memory when the app lock locks): MD5 and SHA-256 of your password (cameras) and SHA-1 of your email and of your password (older firmware, login version 2). Your email itself is still never stored. **New switch "Keep the password for older firmware", off by default:** some older firmware (login version 1) checks your password itself, not a hash, so only with this switch on does TapoCtrl keep your password, encrypted the same way. The account screen says which of the two you have. An account saved with an earlier version keeps working for plugs and bulbs; for cameras and older firmware, enter it again (TapoCtrl tells you when).
+
+### Safety
+
+- Opening, refreshing, scanning and adding cameras only read (`getDeviceInfo`, `getLensMaskConfig`, `getAppComponentList`, `getPresetConfig`). Privacy mode, pan/tilt, positions and restart are sent only from your tap, and never sent a second time after a broken connection; the same holds for older firmware. The automatic tests that check this now cover cameras, and new tests check the camera and older-firmware crypto against the RFC 9383 SPAKE2+ test vector and known answers from the tapo crate, pytapo and python-kasa.
+- Nothing here was run on a phone, a camera or an older-firmware device yet.
+
 ### Fixed
 
 - **Footer badges translated.** The "Google-free · Telemetry-free · arm64" line at the bottom of the You page was still in English in Dutch, French and German; it now reads "Google-vrij · Zonder telemetrie", "Sans Google · Sans télémétrie" and "Google-frei · Ohne Telemetrie", like the other Ctrl apps.

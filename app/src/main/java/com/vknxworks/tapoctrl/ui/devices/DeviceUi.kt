@@ -19,6 +19,7 @@ import androidx.compose.material.icons.outlined.Hub
 import androidx.compose.material.icons.outlined.Power
 import androidx.compose.material.icons.outlined.ToggleOn
 import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -58,15 +59,20 @@ fun errorMessage(context: Context, e: TapoException): String = when (e) {
     is TapoException.NoAccount -> context.getString(R.string.err_no_account)
     is TapoException.LegacyFirmware -> context.getString(R.string.err_legacy)
     is TapoException.DeviceError -> context.getString(R.string.err_device, e.code)
+    is TapoException.AccountIncomplete -> context.getString(R.string.err_account_incomplete)
+    is TapoException.NeedsPassword -> context.getString(R.string.err_needs_password)
+    is TapoException.Locked -> e.seconds?.let { context.getString(R.string.err_locked_for, (it + 59) / 60) } ?: context.getString(R.string.err_locked)
+    is TapoException.CertificateChanged -> context.getString(R.string.err_certificate)
+    is TapoException.Unsupported -> context.getString(R.string.err_unsupported, e.what)
 }
 
 fun toast(context: Context, text: String) = Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
 
 /** The device's name: its own nickname, else the model, else its address. */
 fun SavedDevice.label(state: DeviceState?): String =
-    state?.info?.nickname?.takeIf { it.isNotBlank() } ?: name.takeIf { it.isNotBlank() } ?: model.takeIf { it.isNotBlank() } ?: ip
+    state?.info?.nickname?.takeIf { it.isNotBlank() } ?: state?.camera?.name?.takeIf { it.isNotBlank() } ?: name.takeIf { it.isNotBlank() } ?: model.takeIf { it.isNotBlank() } ?: ip
 
-fun SavedDevice.kind(state: DeviceState?): DeviceKind = state?.info?.kind ?: when {
+fun SavedDevice.kind(state: DeviceState?): DeviceKind = if (isCamera) DeviceKind.CAMERA else state?.info?.kind ?: when {
     type.contains("PLUG", true) -> DeviceKind.PLUG
     type.contains("HUB", true) -> DeviceKind.HUB
     type.contains("SWITCH", true) -> if (model.contains("D", true) && model.startsWith("S5", true)) DeviceKind.DIMMER else DeviceKind.SWITCH
@@ -82,6 +88,7 @@ fun kindIcon(kind: DeviceKind): ImageVector = when (kind) {
     DeviceKind.SWITCH -> Icons.Outlined.ToggleOn
     DeviceKind.DIMMER -> Icons.Outlined.Tune
     DeviceKind.HUB -> Icons.Outlined.Hub
+    DeviceKind.CAMERA -> Icons.Outlined.Videocam
     DeviceKind.OTHER -> Icons.Outlined.DevicesOther
 }
 
@@ -92,8 +99,16 @@ fun statusText(state: DeviceState?): Pair<String, Boolean> {
     val on = state?.info?.on
     return when {
         state?.error is TapoException.LegacyFirmware -> ctx.getString(R.string.status_old_firmware) to false
-        state?.error is TapoException.WrongAccount || state?.error is TapoException.NoAccount -> ctx.getString(R.string.status_sign_in) to false
+        state?.error is TapoException.WrongAccount || state?.error is TapoException.NoAccount ||
+            state?.error is TapoException.AccountIncomplete || state?.error is TapoException.NeedsPassword -> ctx.getString(R.string.status_sign_in) to false
+        state?.error is TapoException.CertificateChanged -> ctx.getString(R.string.status_certificate) to false
         state?.error != null -> ctx.getString(R.string.status_offline) to false
+        // Cameras: privacy mode on means the lens is covered (no video); off means the camera is watching.
+        state?.camera != null -> when (state.camera.privacy) {
+            true -> ctx.getString(R.string.status_privacy_on) to false
+            false -> ctx.getString(R.string.status_camera_on) to true
+            null -> ctx.getString(R.string.status_unknown) to false
+        }
         on == true -> ctx.getString(R.string.status_on) to true
         on == false -> ctx.getString(R.string.status_off) to false
         else -> ctx.getString(R.string.status_unknown) to false

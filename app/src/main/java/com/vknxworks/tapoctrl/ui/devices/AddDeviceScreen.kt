@@ -50,7 +50,9 @@ import com.vknxworks.tapoctrl.ui.components.GroupRow
 import com.vknxworks.tapoctrl.ui.components.ScreenTopBar
 import com.vknxworks.tapoctrl.ui.components.WarningCard
 import com.vknxworks.tapoctrl.ui.nav.LocalNavigator
+import com.vknxworks.tapoctrl.ui.components.CtrlAlertDialog
 import com.vknxworks.tapoctrl.ui.theme.CtrlColors
+import com.vknxworks.tapoctrl.ui.theme.CtrlType
 import com.vknxworks.tapoctrl.ui.theme.Gutter
 import kotlinx.coroutines.launch
 
@@ -70,6 +72,21 @@ fun AddDeviceScreen() {
     var noNetwork by remember { mutableStateOf(false) }
     val found = remember { mutableStateListOf<Found>() }
     val self = remember(scanning) { Discovery.localAddress(context) }
+    var certificate by remember { mutableStateOf<AddResult.ConfirmCertificate?>(null) }
+
+    fun handle(r: AddResult, address: String, hint: Found?) {
+        when (r) {
+            is AddResult.Added -> {
+                toast(context, context.getString(R.string.added, address))
+                if (hint == null) nav.back()
+            }
+            AddResult.AlreadyAdded -> message = context.getString(R.string.add_already)
+            AddResult.NotLocal -> message = context.getString(R.string.err_not_local)
+            AddResult.NoAnswer -> message = context.getString(R.string.add_no_answer, address)
+            // A camera: show its certificate's fingerprint and add it only once you confirm.
+            is AddResult.ConfirmCertificate -> certificate = r
+        }
+    }
 
     fun add(address: String, hint: Found?) {
         if (adding) return
@@ -78,15 +95,18 @@ fun AddDeviceScreen() {
         scope.launch {
             val r = c.devices.add(address, hint)
             adding = false
-            when (r) {
-                is AddResult.Added -> {
-                    toast(context, context.getString(R.string.added, address))
-                    if (hint == null) nav.back()
-                }
-                AddResult.AlreadyAdded -> message = context.getString(R.string.add_already)
-                AddResult.NotLocal -> message = context.getString(R.string.err_not_local)
-                AddResult.NoAnswer -> message = context.getString(R.string.add_no_answer, address)
-            }
+            handle(r, address, hint)
+        }
+    }
+
+    fun addCamera(cert: AddResult.ConfirmCertificate) {
+        if (adding) return
+        adding = true
+        message = null
+        scope.launch {
+            val r = c.devices.addCamera(cert.ip, cert.fingerprint, cert.hint)
+            adding = false
+            handle(r, cert.ip, cert.hint)
         }
     }
 
@@ -163,8 +183,8 @@ fun AddDeviceScreen() {
                 }
                 found.forEach { f ->
                     val isSaved = saved.any { it.ip == f.ip || (f.mac != null && it.mac.equals(f.mac, true)) }
-                    // Cameras speak a different protocol (and RTSP for video); not supported in this version.
-                    val camera = f.type?.contains("CAMERA", ignoreCase = true) == true
+                    // Cameras: added after you confirm their certificate (no live video).
+                    val camera = f.camera
                     GroupRow(
                         f.model ?: stringResource(R.string.found_device),
                         listOfNotNull(
@@ -174,9 +194,7 @@ fun AddDeviceScreen() {
                         ).joinToString(" · "),
                         icon = if (camera) Icons.Outlined.Videocam else Icons.Outlined.Router,
                         trailing = {
-                            if (camera) {
-                                Unit
-                            } else if (isSaved) {
+                            if (isSaved) {
                                 Icon(Icons.Outlined.Check, stringResource(R.string.added_short), tint = CtrlColors.AccentText)
                             } else {
                                 TextButton(onClick = { add(f.ip, f) }, enabled = !adding) { Text(stringResource(R.string.add)) }
@@ -190,5 +208,23 @@ fun AddDeviceScreen() {
             }
             if (noNetwork) WarningCard(stringResource(R.string.scan_no_wifi), Icons.Outlined.WifiOff, Modifier.padding(horizontal = Gutter))
         }
+    }
+    certificate?.let { cert ->
+        CtrlAlertDialog(
+            onDismissRequest = { certificate = null },
+            title = { Text(stringResource(R.string.cert_title), style = MaterialTheme.typography.titleLarge) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(stringResource(R.string.cert_body, cert.ip), style = MaterialTheme.typography.bodyMedium)
+                    Text(cert.fingerprint, style = CtrlType.Data, color = CtrlColors.Text)
+                    Text(stringResource(R.string.cert_note), style = MaterialTheme.typography.bodySmall, color = CtrlColors.Muted)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { certificate = null; addCamera(cert) }) { Text(stringResource(R.string.cert_trust), color = CtrlColors.AccentText) }
+            },
+            dismissButton = { TextButton(onClick = { certificate = null }) { Text(stringResource(R.string.cancel), color = CtrlColors.Text) } },
+            guard = true,
+        )
     }
 }

@@ -77,7 +77,8 @@ class AccountOnlyTest {
         val src = File("src/main/java/com/vknxworks/tapoctrl")
         assertTrue(src.isDirectory)
         val all = src.walkTopDown().filter { it.extension == "kt" }.joinToString("\n") { it.readText() }
-        for (bad in listOf("tp-link.net", "kasaSetup", "DefaultLogins", "authHashes(\"\"", "loginKind")) {
+        // Also none of the default camera passwords or setup passcodes other projects know of.
+        for (bad in listOf("tp-link.net", "kasaSetup", "DefaultLogins", "authHashes(\"\"", "loginKind", "TPL075526460603", "YWRtaW4=", "VFBMMDc1NTI2NDYwNjAz", "MjEyMzJmMjk3YTU3YTVhNzQzODk0YTBlNGE4MDFmYzM=", "default_userpw", "GqY5o136oa4i6VprTlMW2DpVXxmfW8", "dGVzdA==")) {
             assertFalse("Found $bad", all.contains(bad))
         }
         // authHashes is only called with the user's input in AccountVault.save.
@@ -89,5 +90,28 @@ class AccountOnlyTest {
         assertFalse(handshake.contains("KlapCrypto.match("))
         // No saved account: stop before the first network call.
         assertTrue(handshake.indexOf("throw TapoException.NoAccount()") < handshake.indexOf("LanHttp.post"))
+    }
+
+    /** Cameras and older firmware: only values derived from the saved account, made only in AccountVault. */
+    @Test fun cameraAndLegacyLoginsUseOnlyTheSavedAccount() {
+        val src = File("src/main/java/com/vknxworks/tapoctrl")
+        val files = src.walkTopDown().filter { it.extension == "kt" }.toList()
+        for (maker in listOf("CameraSecret.of(", "LegacySecret.of(")) {
+            val callers = files.filter { it.readText().contains(maker) && it.name != "CameraCrypto.kt" && it.name != "PassthroughCrypto.kt" }.map { it.name }
+            assertTrue("$maker called from $callers", callers == listOf("AccountVault.kt"))
+        }
+        val camera = File(src, "tapo/CameraClient.kt").readText()
+        val login = camera.substringAfter("private fun login()").substringBefore("private fun loginSecure(")
+        // No account: stop before the first network call.
+        assertTrue(login.indexOf("throw TapoException.NoAccount()") < login.indexOf("postLogin("))
+        // encrypt_type 3: the camera proves it knows the password before anything derived from it is sent.
+        val secure = camera.substringAfter("private fun loginSecure(").substringBefore("private fun loginHashed(")
+        assertTrue(secure.indexOf("CameraLogin.matchConfirm(") in 0 until secure.indexOf("digest_passwd"))
+        assertTrue(secure.contains("?: throw TapoException.WrongAccount()"))
+        // TPAP: the camera's own proof is checked before the session is used.
+        assertTrue(camera.contains("!proof.verify(devConfirm)) throw TapoException.WrongAccount()"))
+        val legacy = File(src, "tapo/PassthroughClient.kt").readText()
+        val legacyLogin = legacy.substringAfter("private fun login()").substringBefore("companion object")
+        assertTrue(legacyLogin.indexOf("throw TapoException.NoAccount()") < legacyLogin.indexOf("handshake()"))
     }
 }

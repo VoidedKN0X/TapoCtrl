@@ -31,7 +31,7 @@
     <string name="err_unreachable">No answer. Is the device plugged in and on the same Wi-Fi as this phone?</string>
     <string name="err_wrong_account">This device doesn\'t accept your Tapo account; check the email and password under Tapo account.</string>
     <string name="err_no_account">Enter your Tapo account first, so TapoCtrl can talk to this device.</string>
-    <string name="err_legacy">This device uses older firmware TapoCtrl doesn\'t support yet. Updating its firmware may help.</string>
+    <string name="err_legacy">TapoCtrl couldn\'t talk to this device\'s older firmware. Updating its firmware with the Tapo app may help.</string>
     <string name="err_device">The device refused the request (error %1$d).</string>
 
     <!-- Add -->
@@ -53,13 +53,13 @@
     <string name="scan_none_sub">Devices on another network or a guest Wi-Fi can\'t be found from here</string>
     <string name="found_device">Tapo device</string>
     <string name="found_legacy">older firmware</string>
-    <string name="found_camera">cameras aren\'t supported yet</string>
+    <string name="found_camera">camera</string>
 
     <!-- Account -->
     <string name="account_title">Tapo account</string>
     <string name="account_prompt_title">Enter your Tapo account</string>
     <string name="account_prompt_body">Your devices only answer to the account they were set up with. Enter it once; it stays on this phone.</string>
-    <string name="account_intro">Your plugs and bulbs check the Tapo account they were set up with. Enter its email and password once. TapoCtrl turns them into the two hashes the devices check, keeps only those, and forgets the password.</string>
+    <string name="account_intro">Your plugs, bulbs and cameras check the Tapo account they were set up with. Enter its email and password once. TapoCtrl turns them into the hashes the devices check, keeps only those, and forgets the password (unless you keep it for older firmware below).</string>
     <string name="account_replace_intro">To change the account (for example after changing your Tapo password), enter it again.</string>
     <string name="account_email">Email</string>
     <string name="account_password">Password</string>
@@ -72,7 +72,7 @@
     <string name="account_saved_footer">Neither your email nor your password is stored.</string>
     <string name="account_saved_toast">Account saved</string>
     <string name="account_save_failed">Couldn\'t save the account. Try again.</string>
-    <string name="account_privacy">TapoCtrl never sends your email or password anywhere: not to TP-Link, not to any server. Only your own devices on this network see a hash of them, during their encrypted handshake.</string>
+    <string name="account_privacy">TapoCtrl never sends your email or password anywhere: not to TP-Link, not to any server. Only your own devices on this network see them, inside their encrypted login: a hash of them, or for older firmware that asks for it, the password itself.</string>
     <string name="account_forget">Forget account</string>
     <string name="account_forget_title">Forget your Tapo account?</string>
     <string name="account_forget_body">TapoCtrl deletes the saved hashes and their key. Your devices keep working, but TapoCtrl can\'t control them until you enter the account again.</string>
@@ -273,4 +273,45 @@
         <item quantity="one">Room changed for %d device</item>
         <item quantity="other">Rooms changed for %d devices</item>
     </plurals>
+    <string name="err_account_incomplete">Enter your Tapo account again: it was saved before TapoCtrl supported cameras and older firmware, so the values they check are missing.</string>
+    <string name="err_needs_password">This device\'s older firmware checks your password itself. Turn on \"Keep the password for older firmware\" under Tapo account and enter the account again.</string>
+    <string name="err_locked_for">The camera refuses logins for about %1$d min after too many wrong ones. Try again later.</string>
+    <string name="err_locked">The camera refuses logins for a while after too many wrong ones. Try again later.</string>
+    <string name="err_certificate">TapoCtrl doesn\'t trust this camera\'s certificate: it isn\'t the one you confirmed, or none was confirmed on this phone. Nothing was sent. Remove the camera and add it again to check its certificate.</string>
+    <string name="err_unsupported">This camera asks for a login TapoCtrl doesn\'t support yet (%1$s). Nothing more was sent.</string>
+    <string name="status_certificate">Check certificate</string>
+    <string name="status_privacy_on">Privacy on</string>
+    <string name="status_camera_on">Camera on</string>
+    <string name="camera">Camera</string>
+    <string name="info_protocol_legacy">securePassthrough (older firmware), encrypted, on your local network</string>
+    <string name="account_saved_sub_password">Hashes and your password, encrypted with a key in the phone\'s secure hardware</string>
+    <string name="account_saved_footer_password">Your email isn\'t stored. Your password is, encrypted, because you chose to keep it for older firmware.</string>
+    <string name="account_incomplete">Saved before cameras and older firmware were supported. Enter the account again so TapoCtrl can talk to them too.</string>
+    <string name="account_keep_password">Keep the password for older firmware</string>
+    <string name="account_keep_password_sub">Off unless a device needs it</string>
+    <string name="account_keep_password_footer">Some plugs and bulbs on older firmware (the securePassthrough protocol, login version 1) check your password itself, not a hash. Only for those can TapoCtrl keep the password, encrypted with the phone\'s secure hardware like the hashes. Leave this off unless TapoCtrl tells you a device needs it.</string>
+    <string name="camera_privacy">Privacy mode</string>
+    <string name="camera_privacy_on_big">On</string>
+    <string name="camera_privacy_off_big">Off</string>
+    <string name="camera_privacy_on_sub">The lens is covered: no video. Tap to turn privacy mode off</string>
+    <string name="camera_privacy_off_sub">The camera is watching. Tap to turn privacy mode on</string>
+    <string name="camera_pan_tilt">Pan and tilt</string>
+    <string name="camera_pan_tilt_footer">Each tap turns the camera one step. Needs confirming on your device: the open-source Tapo projects disagree on which way is left and right, so the left and right arrows may be swapped on your camera.</string>
+    <string name="camera_tilt_up">Tilt up</string>
+    <string name="camera_tilt_down">Tilt down</string>
+    <string name="camera_pan_left">Turn left</string>
+    <string name="camera_pan_right">Turn right</string>
+    <string name="camera_positions">Saved positions</string>
+    <string name="camera_positions_none">No positions are saved on this camera. You can save them in the Tapo app.</string>
+    <string name="camera_certificate">Certificate (SHA-256)</string>
+    <string name="camera_certificate_none">Not confirmed on this phone</string>
+    <string name="camera_restart">Restart camera</string>
+    <string name="camera_restart_sub">It\'s offline for a minute or two</string>
+    <string name="camera_restart_title">Restart the camera?</string>
+    <string name="camera_restart_body">The camera restarts and doesn\'t record or stream until it\'s back, usually within a minute or two.</string>
+    <string name="camera_restarting">The camera is restarting</string>
+    <string name="cert_title">Check the camera\'s certificate</string>
+    <string name="cert_body">The camera at %1$s made its own HTTPS certificate, so no authority vouches for it. Its SHA-256 fingerprint is:</string>
+    <string name="cert_note">Confirm only on your own home network. TapoCtrl then trusts only this exact certificate for this camera, and stops with a warning if it ever changes.</string>
+    <string name="cert_trust">Trust and add</string>
 </resources>

@@ -33,7 +33,7 @@
     <string name="err_unreachable">Keine Antwort. Ist das Gerät eingesteckt und im selben WLAN wie dieses Smartphone?</string>
     <string name="err_wrong_account">Dieses Gerät akzeptiert dein Tapo-Konto nicht; prüfe E-Mail und Passwort unter Tapo-Konto.</string>
     <string name="err_no_account">Gib zuerst dein Tapo-Konto ein, damit TapoCtrl mit diesem Gerät sprechen kann.</string>
-    <string name="err_legacy">Dieses Gerät nutzt ältere Firmware, die TapoCtrl noch nicht unterstützt. Ein Firmware-Update kann helfen.</string>
+    <string name="err_legacy">TapoCtrl konnte nicht mit der älteren Firmware dieses Geräts sprechen. Ein Firmware-Update mit der Tapo-App kann helfen.</string>
     <string name="err_device">Das Gerät hat die Anfrage abgelehnt (Fehler %1$d).</string>
 
     <!-- Add -->
@@ -55,13 +55,13 @@
     <string name="scan_none_sub">Geräte in einem anderen Netzwerk oder Gast-WLAN können von hier aus nicht gefunden werden</string>
     <string name="found_device">Tapo-Gerät</string>
     <string name="found_legacy">ältere Firmware</string>
-    <string name="found_camera">Kameras werden noch nicht unterstützt</string>
+    <string name="found_camera">Kamera</string>
 
     <!-- Account -->
     <string name="account_title">Tapo-Konto</string>
     <string name="account_prompt_title">Gib dein Tapo-Konto ein</string>
     <string name="account_prompt_body">Deine Geräte antworten nur dem Konto, mit dem sie eingerichtet wurden. Gib es einmal ein; es bleibt auf diesem Smartphone.</string>
-    <string name="account_intro">Deine Steckdosen und Lampen prüfen das Tapo-Konto, mit dem sie eingerichtet wurden. Gib dessen E-Mail und Passwort einmal ein. TapoCtrl macht daraus die zwei Hashes, die die Geräte prüfen, behält nur diese und vergisst das Passwort.</string>
+    <string name="account_intro">Deine Steckdosen, Lampen und Kameras prüfen das Tapo-Konto, mit dem sie eingerichtet wurden. Gib dessen E-Mail und Passwort einmal ein. TapoCtrl macht daraus die Hashes, die die Geräte prüfen, behält nur diese und vergisst das Passwort (außer du behältst es unten für ältere Firmware).</string>
     <string name="account_replace_intro">Um das Konto zu ändern (zum Beispiel nach einer Änderung deines Tapo-Passworts), gib es erneut ein.</string>
     <string name="account_email">E-Mail</string>
     <string name="account_password">Passwort</string>
@@ -74,7 +74,7 @@
     <string name="account_saved_footer">Weder deine E-Mail noch dein Passwort werden gespeichert.</string>
     <string name="account_saved_toast">Konto gespeichert</string>
     <string name="account_save_failed">Konto konnte nicht gespeichert werden. Versuche es noch einmal.</string>
-    <string name="account_privacy">TapoCtrl sendet deine E-Mail und dein Passwort nirgendwohin: nicht an TP-Link, an keinen Server. Nur deine eigenen Geräte in diesem Netzwerk sehen einen Hash davon, während ihres verschlüsselten Handshakes.</string>
+    <string name="account_privacy">TapoCtrl sendet deine E-Mail und dein Passwort nirgendwohin: nicht an TP-Link, an keinen Server. Nur deine eigenen Geräte in diesem Netzwerk sehen sie, in ihrer verschlüsselten Anmeldung: einen Hash davon, oder bei älterer Firmware, die danach fragt, das Passwort selbst.</string>
     <string name="account_forget">Konto vergessen</string>
     <string name="account_forget_title">Dein Tapo-Konto vergessen?</string>
     <string name="account_forget_body">TapoCtrl löscht die gespeicherten Hashes und ihren Schlüssel. Deine Geräte funktionieren weiter, aber TapoCtrl kann sie erst wieder steuern, wenn du das Konto erneut eingibst.</string>
@@ -346,4 +346,45 @@
     <string name="lock_again_15m">Nach 15 Minuten Abwesenheit</string>
     <string name="lock_again_1h">Nach 1 Stunde Abwesenheit</string>
     <string name="lock_again_restart">Nur wenn die App neu startet</string>
+    <string name="err_account_incomplete">Gib dein Tapo-Konto erneut ein: Es wurde gespeichert, bevor TapoCtrl Kameras und ältere Firmware unterstützte, deshalb fehlen die Werte, die sie prüfen.</string>
+    <string name="err_needs_password">Die ältere Firmware dieses Geräts prüft dein Passwort selbst. Schalte unter Tapo-Konto „Passwort für ältere Firmware behalten“ ein und gib das Konto erneut ein.</string>
+    <string name="err_locked_for">Die Kamera lehnt nach zu vielen Fehlversuchen etwa %1$d Min. lang Anmeldungen ab. Versuche es später noch einmal.</string>
+    <string name="err_locked">Die Kamera lehnt nach zu vielen Fehlversuchen eine Weile Anmeldungen ab. Versuche es später noch einmal.</string>
+    <string name="err_certificate">TapoCtrl vertraut dem Zertifikat dieser Kamera nicht: Es ist nicht das, das du bestätigt hast, oder auf diesem Smartphone wurde keines bestätigt. Es wurde nichts gesendet. Entferne die Kamera und füge sie erneut hinzu, um ihr Zertifikat zu prüfen.</string>
+    <string name="err_unsupported">Diese Kamera verlangt eine Anmeldung, die TapoCtrl noch nicht unterstützt (%1$s). Es wurde nichts weiter gesendet.</string>
+    <string name="status_certificate">Zertifikat prüfen</string>
+    <string name="status_privacy_on">Privatsphäre an</string>
+    <string name="status_camera_on">Kamera an</string>
+    <string name="camera">Kamera</string>
+    <string name="info_protocol_legacy">securePassthrough (ältere Firmware), verschlüsselt, in deinem lokalen Netzwerk</string>
+    <string name="account_saved_sub_password">Hashes und dein Passwort, verschlüsselt mit einem Schlüssel in der sicheren Hardware des Smartphones</string>
+    <string name="account_saved_footer_password">Deine E-Mail wird nicht gespeichert. Dein Passwort schon, verschlüsselt, weil du es für ältere Firmware behalten wolltest.</string>
+    <string name="account_incomplete">Gespeichert, bevor Kameras und ältere Firmware unterstützt wurden. Gib das Konto erneut ein, damit TapoCtrl auch mit ihnen sprechen kann.</string>
+    <string name="account_keep_password">Passwort für ältere Firmware behalten</string>
+    <string name="account_keep_password_sub">Aus, außer ein Gerät braucht es</string>
+    <string name="account_keep_password_footer">Manche Steckdosen und Lampen mit älterer Firmware (das securePassthrough-Protokoll, Anmeldeversion 1) prüfen dein Passwort selbst, keinen Hash. Nur für sie kann TapoCtrl das Passwort behalten, verschlüsselt mit der sicheren Hardware des Smartphones wie die Hashes. Lass das aus, außer TapoCtrl sagt dir, dass ein Gerät es braucht.</string>
+    <string name="camera_privacy">Privatsphäre-Modus</string>
+    <string name="camera_privacy_on_big">An</string>
+    <string name="camera_privacy_off_big">Aus</string>
+    <string name="camera_privacy_on_sub">Das Objektiv ist verdeckt: kein Video. Tippe, um den Privatsphäre-Modus auszuschalten</string>
+    <string name="camera_privacy_off_sub">Die Kamera schaut zu. Tippe, um den Privatsphäre-Modus einzuschalten</string>
+    <string name="camera_pan_tilt">Schwenken und neigen</string>
+    <string name="camera_pan_tilt_footer">Jedes Tippen dreht die Kamera um einen Schritt. Muss auf deinem Gerät bestätigt werden: Die Open-Source-Tapo-Projekte sind sich nicht einig, wo links und rechts ist, daher können die Pfeile links und rechts bei deiner Kamera vertauscht sein.</string>
+    <string name="camera_tilt_up">Nach oben neigen</string>
+    <string name="camera_tilt_down">Nach unten neigen</string>
+    <string name="camera_pan_left">Nach links drehen</string>
+    <string name="camera_pan_right">Nach rechts drehen</string>
+    <string name="camera_positions">Gespeicherte Positionen</string>
+    <string name="camera_positions_none">Auf dieser Kamera sind keine Positionen gespeichert. Du kannst sie in der Tapo-App speichern.</string>
+    <string name="camera_certificate">Zertifikat (SHA-256)</string>
+    <string name="camera_certificate_none">Auf diesem Smartphone nicht bestätigt</string>
+    <string name="camera_restart">Kamera neu starten</string>
+    <string name="camera_restart_sub">Sie ist ein bis zwei Minuten offline</string>
+    <string name="camera_restart_title">Kamera neu starten?</string>
+    <string name="camera_restart_body">Die Kamera startet neu und nimmt nichts auf und streamt nicht, bis sie zurück ist, meist nach ein bis zwei Minuten.</string>
+    <string name="camera_restarting">Die Kamera startet neu</string>
+    <string name="cert_title">Zertifikat der Kamera prüfen</string>
+    <string name="cert_body">Die Kamera unter %1$s hat ihr eigenes HTTPS-Zertifikat erstellt, keine Stelle bürgt also dafür. Sein SHA-256-Fingerabdruck ist:</string>
+    <string name="cert_note">Bestätige nur in deinem eigenen Heimnetz. TapoCtrl vertraut dann nur genau diesem Zertifikat für diese Kamera und stoppt mit einer Warnung, falls es sich je ändert.</string>
+    <string name="cert_trust">Vertrauen und hinzufügen</string>
 </resources>

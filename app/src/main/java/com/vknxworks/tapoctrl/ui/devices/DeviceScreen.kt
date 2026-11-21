@@ -137,7 +137,7 @@ fun DeviceScreen(id: String) {
                 Column(Modifier.padding(horizontal = Gutter, vertical = 6.dp)) {
                     WarningCard(errorMessage(context, e), Icons.Outlined.ErrorOutline)
                 }
-                if (e is TapoException.WrongAccount || e is TapoException.NoAccount) {
+                if (e is TapoException.WrongAccount || e is TapoException.NoAccount || e is TapoException.AccountIncomplete || e is TapoException.NeedsPassword) {
                     Group {
                         GroupRow(stringResource(R.string.account_title), stringResource(R.string.account_open_sub), icon = Icons.Outlined.Key, showChevron = true, onClick = { nav.navigate(AccountRoute) })
                     }

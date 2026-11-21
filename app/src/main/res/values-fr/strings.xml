@@ -33,7 +33,7 @@
     <string name="err_unreachable">Pas de réponse. L\'appareil est-il branché et sur le même Wi-Fi que ce téléphone ?</string>
     <string name="err_wrong_account">Cet appareil n\'accepte pas votre compte Tapo ; vérifiez l\'adresse e-mail et le mot de passe sous Compte Tapo.</string>
     <string name="err_no_account">Saisissez d\'abord votre compte Tapo pour que TapoCtrl puisse communiquer avec cet appareil.</string>
-    <string name="err_legacy">Cet appareil utilise un ancien firmware que TapoCtrl ne prend pas encore en charge. Mettre à jour son firmware peut aider.</string>
+    <string name="err_legacy">TapoCtrl n\'a pas pu communiquer avec l\'ancien firmware de cet appareil. Mettre à jour son firmware avec l\'app Tapo peut aider.</string>
     <string name="err_device">L\'appareil a refusé la demande (erreur %1$d).</string>
 
     <!-- Add -->
@@ -55,13 +55,13 @@
     <string name="scan_none_sub">Les appareils sur un autre réseau ou un Wi-Fi invité sont introuvables d\'ici</string>
     <string name="found_device">Appareil Tapo</string>
     <string name="found_legacy">ancien firmware</string>
-    <string name="found_camera">les caméras ne sont pas encore prises en charge</string>
+    <string name="found_camera">caméra</string>
 
     <!-- Account -->
     <string name="account_title">Compte Tapo</string>
     <string name="account_prompt_title">Saisissez votre compte Tapo</string>
     <string name="account_prompt_body">Vos appareils ne répondent qu\'au compte avec lequel ils ont été configurés. Saisissez-le une fois ; il reste sur ce téléphone.</string>
-    <string name="account_intro">Vos prises et ampoules vérifient le compte Tapo avec lequel elles ont été configurées. Saisissez son adresse e-mail et son mot de passe une fois. TapoCtrl les transforme en deux hachages que les appareils vérifient, ne conserve que ceux-ci et oublie le mot de passe.</string>
+    <string name="account_intro">Vos prises, ampoules et caméras vérifient le compte Tapo avec lequel elles ont été configurées. Saisissez son adresse e-mail et son mot de passe une fois. TapoCtrl les transforme en hachages que les appareils vérifient, ne conserve que ceux-ci et oublie le mot de passe (sauf si vous le conservez ci-dessous pour un ancien firmware).</string>
     <string name="account_replace_intro">Pour changer de compte (par exemple après avoir changé votre mot de passe Tapo), saisissez-le à nouveau.</string>
     <string name="account_email">E-mail</string>
     <string name="account_password">Mot de passe</string>
@@ -74,7 +74,7 @@
     <string name="account_saved_footer">Ni votre adresse e-mail ni votre mot de passe ne sont stockés.</string>
     <string name="account_saved_toast">Compte enregistré</string>
     <string name="account_save_failed">Impossible d\'enregistrer le compte. Réessayez.</string>
-    <string name="account_privacy">TapoCtrl n\'envoie jamais votre adresse e-mail ni votre mot de passe nulle part : ni à TP-Link, ni à aucun serveur. Seuls vos propres appareils sur ce réseau en voient un hachage, pendant leur échange de clés chiffré.</string>
+    <string name="account_privacy">TapoCtrl n\'envoie jamais votre adresse e-mail ni votre mot de passe nulle part : ni à TP-Link, ni à aucun serveur. Seuls vos propres appareils sur ce réseau les voient, dans leur connexion chiffrée : un hachage, ou le mot de passe lui-même pour un ancien firmware qui le demande.</string>
     <string name="account_forget">Oublier le compte</string>
     <string name="account_forget_title">Oublier votre compte Tapo ?</string>
     <string name="account_forget_body">TapoCtrl supprime les hachages enregistrés et leur clé. Vos appareils continuent de fonctionner, mais TapoCtrl ne peut plus les contrôler tant que vous n\'avez pas saisi à nouveau le compte.</string>
@@ -346,4 +346,45 @@
     <string name="lock_again_15m">Après 15 minutes d\'absence</string>
     <string name="lock_again_1h">Après 1 heure d\'absence</string>
     <string name="lock_again_restart">Uniquement au redémarrage de l\'application</string>
+    <string name="err_account_incomplete">Saisissez à nouveau votre compte Tapo : il a été enregistré avant que TapoCtrl prenne en charge les caméras et les anciens firmwares, il manque donc les valeurs qu\'ils vérifient.</string>
+    <string name="err_needs_password">L\'ancien firmware de cet appareil vérifie votre mot de passe lui-même. Activez « Conserver le mot de passe pour un ancien firmware » sous Compte Tapo et saisissez à nouveau le compte.</string>
+    <string name="err_locked_for">La caméra refuse les connexions pendant environ %1$d min après trop d\'échecs. Réessayez plus tard.</string>
+    <string name="err_locked">La caméra refuse les connexions pendant un moment après trop d\'échecs. Réessayez plus tard.</string>
+    <string name="err_certificate">TapoCtrl ne fait pas confiance au certificat de cette caméra : ce n\'est pas celui que vous avez confirmé, ou aucun n\'a été confirmé sur ce téléphone. Rien n\'a été envoyé. Retirez la caméra et ajoutez-la à nouveau pour vérifier son certificat.</string>
+    <string name="err_unsupported">Cette caméra demande une connexion que TapoCtrl ne prend pas encore en charge (%1$s). Rien d\'autre n\'a été envoyé.</string>
+    <string name="status_certificate">Vérifier le certificat</string>
+    <string name="status_privacy_on">Confidentialité activée</string>
+    <string name="status_camera_on">Caméra active</string>
+    <string name="camera">Caméra</string>
+    <string name="info_protocol_legacy">securePassthrough (ancien firmware), chiffrée, sur votre réseau local</string>
+    <string name="account_saved_sub_password">Des hachages et votre mot de passe, chiffrés avec une clé dans le matériel sécurisé du téléphone</string>
+    <string name="account_saved_footer_password">Votre adresse e-mail n\'est pas stockée. Votre mot de passe l\'est, chiffré, car vous avez choisi de le conserver pour un ancien firmware.</string>
+    <string name="account_incomplete">Enregistré avant la prise en charge des caméras et des anciens firmwares. Saisissez à nouveau le compte pour que TapoCtrl puisse aussi communiquer avec eux.</string>
+    <string name="account_keep_password">Conserver le mot de passe pour un ancien firmware</string>
+    <string name="account_keep_password_sub">Désactivé sauf si un appareil en a besoin</string>
+    <string name="account_keep_password_footer">Certaines prises et ampoules avec un ancien firmware (le protocole securePassthrough, version de connexion 1) vérifient votre mot de passe lui-même, pas un hachage. Pour elles seulement, TapoCtrl peut conserver le mot de passe, chiffré avec le matériel sécurisé du téléphone comme les hachages. Laissez cette option désactivée sauf si TapoCtrl vous indique qu\'un appareil en a besoin.</string>
+    <string name="camera_privacy">Mode confidentialité</string>
+    <string name="camera_privacy_on_big">Activé</string>
+    <string name="camera_privacy_off_big">Désactivé</string>
+    <string name="camera_privacy_on_sub">L\'objectif est masqué : pas de vidéo. Touchez pour désactiver le mode confidentialité</string>
+    <string name="camera_privacy_off_sub">La caméra filme. Touchez pour activer le mode confidentialité</string>
+    <string name="camera_pan_tilt">Orientation</string>
+    <string name="camera_pan_tilt_footer">Chaque appui tourne la caméra d\'un cran. À confirmer sur votre appareil : les projets Tapo open source ne s\'accordent pas sur le sens gauche et droite, les flèches gauche et droite peuvent donc être inversées sur votre caméra.</string>
+    <string name="camera_tilt_up">Incliner vers le haut</string>
+    <string name="camera_tilt_down">Incliner vers le bas</string>
+    <string name="camera_pan_left">Tourner à gauche</string>
+    <string name="camera_pan_right">Tourner à droite</string>
+    <string name="camera_positions">Positions enregistrées</string>
+    <string name="camera_positions_none">Aucune position n\'est enregistrée sur cette caméra. Vous pouvez en enregistrer dans l\'app Tapo.</string>
+    <string name="camera_certificate">Certificat (SHA-256)</string>
+    <string name="camera_certificate_none">Non confirmé sur ce téléphone</string>
+    <string name="camera_restart">Redémarrer la caméra</string>
+    <string name="camera_restart_sub">Elle est hors ligne une ou deux minutes</string>
+    <string name="camera_restart_title">Redémarrer la caméra ?</string>
+    <string name="camera_restart_body">La caméra redémarre et n\'enregistre ni ne diffuse rien jusqu\'à son retour, généralement en une ou deux minutes.</string>
+    <string name="camera_restarting">La caméra redémarre</string>
+    <string name="cert_title">Vérifier le certificat de la caméra</string>
+    <string name="cert_body">La caméra à l\'adresse %1$s a créé son propre certificat HTTPS, aucune autorité ne s\'en porte donc garante. Son empreinte SHA-256 est :</string>
+    <string name="cert_note">Ne confirmez que sur votre propre réseau domestique. TapoCtrl ne fera ensuite confiance qu\'à ce certificat précis pour cette caméra, et s\'arrêtera avec un avertissement s\'il change un jour.</string>
+    <string name="cert_trust">Faire confiance et ajouter</string>
 </resources>

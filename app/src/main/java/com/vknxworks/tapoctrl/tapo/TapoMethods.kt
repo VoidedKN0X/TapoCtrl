@@ -55,10 +55,31 @@ object TapoMethods {
     /** A colour bulb's effect on or off: only from a tap on that effect. */
     const val SET_DYNAMIC_LIGHT_EFFECT_RULE_ENABLE = "set_dynamic_light_effect_rule_enable"
 
+    // Cameras (SMART.IPCAMERA), each method inside a multipleRequest, as python-kasa (smartcam), pytapo and the
+    // tapo crate send them.
+    /** Model, name, firmware, hardware and MAC (`device_info` / `basic_info`). Read-only. */
+    const val CAM_GET_DEVICE_INFO = "getDeviceInfo"
+    /** Privacy mode (lens mask) on or off. Read-only. */
+    const val CAM_GET_LENS_MASK = "getLensMaskConfig"
+    /** Which features the camera has ("ptz", "lensMask", …). Read-only. */
+    const val CAM_GET_COMPONENTS = "getAppComponentList"
+    /** The pan/tilt positions saved on the camera. Read-only. */
+    const val CAM_GET_PRESETS = "getPresetConfig"
+
+    /** Privacy mode on or off: only from a tap on that control. */
+    const val CAM_SET_LENS_MASK = "setLensMaskConfig"
+    /** Pan or tilt by a step: only from a tap on an arrow. */
+    const val CAM_MOTOR_MOVE = "motorMove"
+    /** Turn to a saved position: only from a tap on that position. */
+    const val CAM_MOTOR_TO_PRESET = "motorMoveToPreset"
+    /** Restart the camera: only after the confirmation dialog. */
+    const val CAM_REBOOT = "rebootDevice"
+
     val READS: Set<String> = setOf(
         GET_DEVICE_INFO, GET_ENERGY_USAGE, GET_CURRENT_POWER, GET_ENERGY_DATA, GET_LATEST_FW, GET_FW_DOWNLOAD_STATE,
         COMPONENT_NEGO, GET_CHILD_DEVICE_LIST, GET_LED_INFO, GET_AUTO_OFF_CONFIG, GET_DEVICE_USAGE,
         GET_PRESET_RULES, GET_DYNAMIC_LIGHT_EFFECT_RULES,
+        CAM_GET_DEVICE_INFO, CAM_GET_LENS_MASK, CAM_GET_COMPONENTS, CAM_GET_PRESETS,
     )
 
     fun isRead(method: String): Boolean = method in READS
@@ -129,6 +150,24 @@ object DeviceReads {
     suspend fun usage(c: TapoCaller): DeviceUsage = DeviceUsage.parse(c.readOnly().call(TapoMethods.GET_DEVICE_USAGE, null))
 
     suspend fun latestFirmware(c: TapoCaller): FirmwareInfo = FirmwareInfo.parse(c.readOnly().call(TapoMethods.GET_LATEST_FW, null))
+
+    /** A camera's info, privacy mode and features (and saved positions when it can pan and tilt). */
+    suspend fun camera(c: TapoCaller, components: Set<String>?): CameraStatus {
+        val r = c.readOnly()
+        val info = r.call(TapoMethods.CAM_GET_DEVICE_INFO, Camera.deviceInfoParams())
+        val comps = components ?: try {
+            Camera.parseComponents(r.call(TapoMethods.CAM_GET_COMPONENTS, Camera.componentsParams()))
+        } catch (e: TapoException.DeviceError) {
+            emptySet()
+        }
+        val privacy = if (comps.isEmpty() || Camera.LENS_MASK in comps) {
+            try { Camera.parseLensMask(r.call(TapoMethods.CAM_GET_LENS_MASK, Camera.lensMaskParams())) } catch (e: TapoException.DeviceError) { null }
+        } else null
+        val presets = if (Camera.PTZ in comps) {
+            try { Camera.parsePresets(r.call(TapoMethods.CAM_GET_PRESETS, Camera.presetsParams())) } catch (e: TapoException.DeviceError) { emptyList() }
+        } else emptyList()
+        return Camera.parseInfo(info).copy(privacy = privacy, components = comps, presets = presets)
+    }
 
     suspend fun downloadState(c: TapoCaller): DownloadState =
         DownloadState.parse(c.readOnly().call(TapoMethods.GET_FW_DOWNLOAD_STATE, null))

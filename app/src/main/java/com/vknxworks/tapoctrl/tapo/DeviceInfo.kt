@@ -96,7 +96,7 @@ data class DeviceInfo(
     }
 }
 
-enum class DeviceKind { PLUG, BULB, STRIP, SWITCH, DIMMER, HUB, OTHER }
+enum class DeviceKind { PLUG, BULB, STRIP, SWITCH, DIMMER, HUB, CAMERA, OTHER }
 
 /** get_energy_usage: today's and this month's energy in Wh, and the power now in W. */
 data class EnergyUsage(val todayWh: Double?, val monthWh: Double?, val powerW: Double?, val todayMinutes: Int?, val monthMinutes: Int?) {

@@ -1,10 +1,10 @@
 # TapoCtrl
 
-**Control your TP-Link Tapo plugs and bulbs on your home network, without the Tapo app and without TP-Link's cloud.**
+**Control your TP-Link Tapo plugs, bulbs and cameras on your home network, without the Tapo app and without TP-Link's cloud.**
 
 [![Latest release](https://img.shields.io/github/v/release/VoidedKN0X/TapoCtrl?label=download)](https://github.com/VoidedKN0X/TapoCtrl/releases/latest) ![Android 15+](https://img.shields.io/badge/Android-15%2B-3DDC84?logo=android&logoColor=white) [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE) ![Telemetry-free](https://img.shields.io/badge/telemetry-none-brightgreen) ![Local network only](https://img.shields.io/badge/network-local%20only-brightgreen) [![Sponsor](https://img.shields.io/badge/sponsor-GitHub-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/VoidedKN0X)
 
-TapoCtrl talks to your Tapo devices directly over your Wi-Fi, with the same encrypted local protocol (KLAP) the official app uses on your network. Your phone never contacts TP-Link: no account login online, no cloud, no tracking. Switch things on and off, dim and colour your bulbs, see what your plugs use, and update their firmware.
+TapoCtrl talks to your Tapo devices directly over your Wi-Fi, with the same encrypted local protocols the official app uses on your network (KLAP, the older securePassthrough, and HTTPS for cameras). Your phone never contacts TP-Link: no account login online, no cloud, no tracking. Switch things on and off, dim and colour your bulbs, see what your plugs use, and update their firmware.
 
 Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 
@@ -17,6 +17,8 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Lights:** brightness, colour temperature, and hue and saturation on colour bulbs and light strips, the presets saved on the light, a strip's 17 built-in effects and a colour bulb's Party and Relax effects
 - **Energy** on plugs that measure it (such as the P110 and P115): power right now, today's and this month's energy, and an estimated cost from the electricity price you set
 - **Energy graphs** on those plugs: today by the hour, the last 7 and 30 days by the day, and the last 12 months by the month, read from the plug's own energy memory (with a total, the highest bar and the estimated cost). Tap a bar for its value, and export the graph as a CSV file. Reading the history never changes anything on the plug
+- **Cameras** (such as the C200): privacy mode on or off, pan and tilt step by step and the positions saved on the camera (on cameras that pan and tilt), the camera's details and restart. Each camera shows on Home with its privacy mode. TapoCtrl connects over HTTPS and trusts only the camera's own certificate, after you confirmed its fingerprint once. No live video
+- **Older firmware:** plugs and bulbs that don't have KLAP yet are reached with their older protocol (securePassthrough), picked automatically
 - **Power strips:** every socket of a strip (P300 and similar) with its own on/off switch
 - **Wall switches and dimmers** (S500, S500D, S505 and similar): on/off, and brightness on dimmers
 - **Hub sensors, read-only:** the temperature and humidity, contact (open/closed) and motion sensors paired with a Tapo hub (H100, H200), with low-battery and offline marks
@@ -28,7 +30,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Device info:** model, firmware and hardware version, MAC address, Wi-Fi signal and IP address
 - **Firmware updates:** TapoCtrl asks the device whether TP-Link has a newer version, shows the version and release notes, and on your OK tells the device to install it. You can follow the download, install and restart. The device reboots at the end, so a plug briefly cuts power to whatever is plugged into it
 - **Never switches anything on its own:** opening the app, refreshing, scanning and adding devices only read their state. A device changes only when you tap its own control (power button, slider, rename) or confirm a firmware update. No schedules, automations or "restore last state"
-- **Your account stays on the phone:** you enter your Tapo email and password once; TapoCtrl keeps only the two hashes the devices check, encrypted with a key in the phone's secure hardware. The password is never stored
+- **Your account stays on the phone:** you enter your Tapo email and password once; TapoCtrl keeps only the hashes the devices check, encrypted with a key in the phone's secure hardware. The email is never stored, and the password only if you turn on "Keep the password for older firmware" (see [What is stored](#what-is-stored-and-why))
 - **App lock** with its own PIN and optional fingerprint unlock, and **Hide in screenshots** / **Hide in recent apps** (all off until you turn them on)
 - **In English, Dutch, French or German:** TapoCtrl follows your phone's language. With the phone set to Dutch it is in Dutch (written for Flanders, informal "je"), set to French it is in French (formal "vous", as Android itself), set to German it is in German (informal "du"); otherwise English. You can also pick one of these for TapoCtrl alone under Android's Settings > Apps > TapoCtrl > Language. Model names, units and technical terms stay as they are
 - **Ctrl / Signal look**, shared by every Ctrl app: dark and light, high contrast, one violet accent, Space Grotesk and JetBrains Mono
@@ -36,8 +38,8 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 ## What works, and what doesn't yet
 
 - **Devices with current firmware** (the KLAP protocol): Tapo plugs (P100, P105, P110, P115 and similar), bulbs (L510, L530, L630 and similar) and light strips (L900, L920, L930). Kasa devices that use KLAP may work for on/off.
-- **Older firmware** that still uses the earlier "securePassthrough" protocol isn't supported yet. TapoCtrl tells you when a device uses it; updating the device's firmware with the Tapo app once usually moves it to KLAP.
-- **Cameras** (C100, C200 and others) aren't supported in this version: no live view (RTSP) and no controls. The scan lists them but can't add them.
+- **Older firmware** that uses the earlier "securePassthrough" protocol: TapoCtrl switches to it by itself when a device has no KLAP. Devices that announce login version 2 need only hashes; others (login version 1) check the password itself, which TapoCtrl only has if you turned on "Keep the password for older firmware". Not tested on a real device yet.
+- **Cameras** (C100, C200, C210 and others): privacy mode, pan and tilt, saved positions and restart. Three logins are supported, picked by TapoCtrl: TPAP (SPAKE2+, recent firmware), the "encrypt_type 3" login, and the older hashed login. No live view (RTSP), recordings, detection settings or saving new positions. Which way the left/right arrows turn **needs confirming on your device** (the open-source projects disagree). Not tested on a real camera yet. A camera whose firmware asks for a password transform TapoCtrl doesn't know says so and stops.
 - **Power strips** (P300 and similar): each socket can be switched. Energy is shown for the strip as a whole where it measures it.
 - **Hubs and sensors:** temperature/humidity (T310, T315), contact (T110) and motion (T100) sensors are shown read-only through their hub. Buttons (S200) are listed without readings. Sensor settings, alarms and the hub's own siren aren't supported.
 - **After a power cut:** shown as the device reports it, not changed: the command to change it couldn't be confirmed from established open-source Tapo projects, so it shows "Needs confirming on your device".
@@ -45,7 +47,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Setting up a new device** (joining it to your Wi-Fi) still needs the Tapo app once. After that, TapoCtrl can do the rest.
 - **Remote control from outside your home** isn't possible: TapoCtrl only works on the same network as your devices. That's the point.
 
-**Tested on:** no Tapo device has been controlled end to end yet. The protocol code is checked with unit tests against independently computed values, and during development a real P110 was found by the scan (both ways) and answered the first step of the handshake; it hasn't been switched or read with a real account yet. Please [report](https://github.com/VoidedKN0X/TapoCtrl/issues/new/choose) which devices work for you.
+**Tested on:** no Tapo device has been controlled end to end yet, and no camera or older-firmware device has been contacted at all. The protocol code is checked with unit tests against independently computed values, and during development a real P110 was found by the scan (both ways) and answered the first step of the handshake; it hasn't been switched or read with a real account yet. Please [report](https://github.com/VoidedKN0X/TapoCtrl/issues/new/choose) which devices work for you.
 
 ## Requirements
 
@@ -66,7 +68,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 ## Getting started
 
 1. **Tapo account:** tap the card at the top and enter the email and password of your Tapo account. They're turned into hashes on the phone right away.
-2. **Add devices:** tap **+**, then **Scan network**, and **Add** next to each device. Or type a device's IP address (your router lists it; giving the device a fixed address there keeps it the same).
+2. **Add devices:** tap **+**, then **Scan network**, and **Add** next to each device. Or type a device's IP address (your router lists it; giving the device a fixed address there keeps it the same). For a camera, TapoCtrl first shows the fingerprint of the camera's certificate; tap **Trust and add** only on your own network.
 3. **Use them:** the power button on each tile switches it. Tap a tile for brightness, colour, energy, rename, device info and firmware updates.
 4. **Settings** (profile picture): your Tapo account, grid or list, electricity price and currency, and privacy.
 
@@ -116,7 +118,8 @@ Turn the app lock on under **Settings > Privacy and security > App lock**. It's 
 
 - **Local network only.** Every connection goes to an address you added or the scan found, and TapoCtrl checks before connecting that it's a private or link-local address (10.x, 172.16–31.x, 192.168.x, 169.254.x, or IPv6 fc00::/7 and fe80::/10). Host names are never looked up. Proxies and redirects are never followed.
 - **Plain HTTP, encrypted content.** Tapo devices only speak HTTP on port 80, so TapoCtrl allows unencrypted HTTP connections (Android's network security config can't limit that to address ranges; the check above does). What's sent is encrypted with KLAP: AES-128 with a key both sides derive from your account during each session's handshake.
-- **Your Tapo account:** the email and password are turned into the two hashes devices check (SHA-256 of SHA-1 hashes for current firmware, MD5 for some older KLAP firmware) and immediately forgotten. Only the hashes are kept, encrypted with AES-256-GCM using a key in the Android Keystore (in StrongBox, the phone's separate security chip, when it has one). They're sent nowhere: devices prove they know the same account, and TapoCtrl proves it back, without the hash itself crossing the network.
+- **Your Tapo account:** see [What is stored and why](#what-is-stored-and-why). Everything is encrypted with AES-256-GCM using a key in the Android Keystore (in StrongBox, the phone's separate security chip, when it has one). With KLAP and the cameras' newer logins, devices prove they know the same account and TapoCtrl proves it back, without the hash itself crossing the network.
+- **Cameras** use HTTPS with a certificate the camera made itself. When you add one, TapoCtrl shows the certificate's SHA-256 fingerprint and adds the camera only after you confirm it; from then on it accepts only that exact certificate for that camera and stops if it changes. Importing a settings file never brings a certificate along: cameras from a file must be added again.
 - **Only your own account.** TapoCtrl has no built-in, blank or setup accounts. If a device doesn't accept your account, TapoCtrl says so and stops; it tries nothing else. Without a saved account it doesn't contact your devices at all (only **Scan network** looks for them, without any account data).
 - **Scan network** sends TP-Link's discovery broadcast (with a throwaway key made on the phone for that scan) and a random 16-byte handshake start to each address of your Wi-Fi's /24 subnet. Nothing about you or your account is sent.
 - **Your device list** (addresses, names, models and MAC addresses of the devices you added) is stored encrypted on the phone as well: AES-256-GCM with a random key that is itself protected by a key in the Android Keystore. That protects it when the app's files are copied off the phone, on top of Android's own storage encryption.
@@ -125,11 +128,26 @@ Turn the app lock on under **Settings > Privacy and security > App lock**. It's 
 - Your devices, settings and account hashes are in TapoCtrl's private storage. Android backups don't include them, and TapoCtrl is left out of Android's cloud backup and its phone-to-phone transfer.
 - The Support, Report a bug, Source code and Licence links on the You page open in your browser, only when you tap them.
 
+## What is stored and why
+
+All of this is in one file in TapoCtrl's private storage, encrypted with AES-256-GCM under a key in the Android Keystore, left out of backups, and dropped from memory when the app lock locks. Your email is never stored.
+
+| Value | Derived from | Why |
+| --- | --- | --- |
+| SHA-256(SHA-1(email) + SHA-1(password)) and MD5(MD5(email) + MD5(password)) | email and password | The two KLAP hashes current plug and bulb firmware checks |
+| MD5(password) and SHA-256(password) | password | Cameras: the encrypt_type 3 login, the older hashed login, and TPAP's passcodes are made from these |
+| SHA-1(email) and SHA-1(password) | email, password | Older firmware (securePassthrough), login version 2 |
+| **The password itself**, only if you turn on "Keep the password for older firmware" | — | Older firmware with login version 1 sends the password itself (Base64, inside its encrypted session). There's no way around it for those devices. Off by default |
+
+An account saved with TapoCtrl 0.5 or earlier has only the two KLAP hashes. Plugs and bulbs keep working; for cameras and older firmware, enter the account again.
+
+The password (when you keep it) and the hashes above are only ever sent to your own devices, inside their encrypted logins: securePassthrough's login (login version 1 sends the password, version 2 a SHA-1 hash, protected by a session key the device sends encrypted with a throwaway RSA key), a camera's older hashed login (the MD5 hash, over the pinned HTTPS connection), or as proofs that never reveal the hash (KLAP, encrypt_type 3, TPAP).
+
 ## How TapoCtrl is made
 
 TapoCtrl is a one-person project by VoidedKN0X (VKNXWorks). Much of the code is written with the help of AI (Claude, by Anthropic). I decide what the app does, review the changes and use the app myself. Every change is listed in the [changelog](CHANGELOG.md), and you can read every line of code here.
 
-TapoCtrl isn't made by or affiliated with TP-Link. Tapo is a trademark of TP-Link. The KLAP protocol was documented by the open-source community (projects such as python-kasa and plugp100); TapoCtrl is its own implementation.
+TapoCtrl isn't made by or affiliated with TP-Link. Tapo is a trademark of TP-Link. The KLAP, securePassthrough and camera protocols were documented by the open-source community (python-kasa, plugp100, pytapo and the tapo crate); TapoCtrl is its own implementation, checked against their test vectors.
 
 ## Build from source
 
@@ -193,7 +211,7 @@ Native Android apps for self-hosted services and everyday tools, all with the sa
 | [SumCtrl](https://github.com/VoidedKN0X/SumCtrl) | Offline calculator, unit converter and work tools |
 | [SynapseCtrl](https://github.com/VoidedKN0X/SynapseCtrl) | Administer your Matrix Synapse server |
 | [TalkCtrl](https://github.com/VoidedKN0X/TalkCtrl) | Cardo intercom settings, radio and updates |
-| **TapoCtrl** (this app) | Tapo plugs and bulbs on your home network |
+| **TapoCtrl** (this app) | Tapo plugs, bulbs and cameras on your home network |
 | [TextCtrl](https://github.com/VoidedKN0X/TextCtrl) | Private SMS and MMS messaging |
 | [TrueCtrl](https://github.com/VoidedKN0X/TrueCtrl) | Monitor and manage your TrueNAS server |
 | [WakeCtrl](https://github.com/VoidedKN0X/WakeCtrl) | Keep the screen awake, per app or while charging |

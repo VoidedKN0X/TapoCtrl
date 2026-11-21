@@ -61,7 +61,10 @@ class ReadOnlyPathsTest {
     }
 
     @Test fun readsListHasNoWrites() {
-        assertTrue(TapoMethods.READS.all { it.startsWith("get_") })
+        assertTrue(TapoMethods.READS.all { it.startsWith("get_") || it == TapoMethods.COMPONENT_NEGO || Regex("^get[A-Z]").containsMatchIn(it) })
+        for (w in listOf(TapoMethods.CAM_SET_LENS_MASK, TapoMethods.CAM_MOTOR_MOVE, TapoMethods.CAM_MOTOR_TO_PRESET, TapoMethods.CAM_REBOOT)) {
+            assertFalse(w, TapoMethods.isRead(w))
+        }
         assertFalse(TapoMethods.isRead(TapoMethods.SET_DEVICE_INFO))
         assertFalse(TapoMethods.isRead(TapoMethods.FW_DOWNLOAD))
         assertFalse(TapoMethods.isRead(TapoMethods.SET_LED_INFO))
@@ -73,6 +76,52 @@ class ReadOnlyPathsTest {
         assertFalse(KlapClient.retriesAfterBrokenConnection(TapoMethods.SET_DEVICE_INFO))
         assertFalse(KlapClient.retriesAfterBrokenConnection(TapoMethods.FW_DOWNLOAD))
         assertTrue(KlapClient.retriesAfterBrokenConnection(TapoMethods.GET_DEVICE_INFO))
+        // Cameras and older firmware use the same rule.
+        for (w in listOf(TapoMethods.CAM_SET_LENS_MASK, TapoMethods.CAM_MOTOR_MOVE, TapoMethods.CAM_MOTOR_TO_PRESET, TapoMethods.CAM_REBOOT)) {
+            assertFalse(w, KlapClient.retriesAfterBrokenConnection(w))
+        }
+        assertTrue(KlapClient.retriesAfterBrokenConnection(TapoMethods.CAM_GET_LENS_MASK))
+        val sources = File("src/main/java/com/vknxworks/tapoctrl/tapo")
+        for (name in listOf("CameraClient.kt", "PassthroughClient.kt")) {
+            val text = File(sources, name).readText()
+            assertTrue("$name: a broken connection retries only reads", text.contains("if (retry && KlapClient.retriesAfterBrokenConnection(method)) throw Retry()"))
+            // Login steps are never repeated on their own after a broken connection either.
+            assertFalse(name, text.substringAfter("private fun login()").contains("throw Retry()"))
+        }
+    }
+
+    /** A fake camera: answers reads in the camera's format, fails the test on anything that could change it. */
+    @Test fun cameraReadsOnlyRead() = runBlocking {
+        val sent = mutableListOf<String>()
+        val camera = TapoCaller { method, _ ->
+            sent += method
+            if (!TapoMethods.isRead(method)) fail("A read-only path sent $method to a camera")
+            kotlinx.serialization.json.Json.parseToJsonElement(
+                when (method) {
+                    TapoMethods.CAM_GET_DEVICE_INFO -> """{"device_info":{"basic_info":{"device_model":"C200","device_alias":"Hall","device_type":"SMART.IPCAMERA","sw_version":"1.3.17 Build 260112","hw_version":"1.0","mac":"28-EE-52-00-00-00"}}}"""
+                    TapoMethods.CAM_GET_COMPONENTS -> """{"app_component":{"app_component_list":[{"name":"ptz","version":1},{"name":"lensMask","version":1}]}}"""
+                    TapoMethods.CAM_GET_LENS_MASK -> """{"lens_mask":{"lens_mask_info":{"enabled":"on"}}}"""
+                    TapoMethods.CAM_GET_PRESETS -> """{"preset":{"preset":{"id":["1","2"],"name":["Door",""]}}}"""
+                    else -> "{}"
+                },
+            )
+        }
+        repeat(3) {
+            val status = DeviceReads.camera(camera, null)
+            assertEquals("C200", status.model)
+            assertEquals("Hall", status.name)
+            assertEquals(true, status.privacy)
+            assertTrue(status.canPanTilt)
+            assertEquals(listOf(CameraPreset("1", "Door"), CameraPreset("2", "2")), status.presets)
+        }
+        assertTrue(sent.all { TapoMethods.isRead(it) })
+        for (m in listOf(TapoMethods.CAM_SET_LENS_MASK, TapoMethods.CAM_MOTOR_MOVE, TapoMethods.CAM_MOTOR_TO_PRESET, TapoMethods.CAM_REBOOT)) {
+            try {
+                camera.readOnly().call(m, null)
+                fail("$m got through")
+            } catch (_: WriteRefused) {
+            }
+        }
     }
 
     /** Writes appear only in DeviceRepository's user actions; discovery sends no methods at all. */
@@ -84,12 +133,14 @@ class ReadOnlyPathsTest {
             val text = f.readText()
             if (f.name != "TapoMethods.kt") {
                 assertFalse("${f.name} names a write method directly", text.contains("\"set_device_info\"") || text.contains("\"fw_download\""))
+                for (w in listOf("\"setLensMaskConfig\"", "\"motorMove", "\"rebootDevice\"")) assertFalse("${f.name} names $w directly", text.contains(w))
             }
-            val writes = Regex("""TapoMethods\.(SET_DEVICE_INFO|FW_DOWNLOAD|SET_LED_INFO|SET_AUTO_OFF_CONFIG|CONTROL_CHILD|SET_LIGHTING_EFFECT|SET_DYNAMIC_LIGHT_EFFECT_RULE_ENABLE)""").findAll(text).count()
+            val writes = Regex("""TapoMethods\.(SET_DEVICE_INFO|FW_DOWNLOAD|SET_LED_INFO|SET_AUTO_OFF_CONFIG|CONTROL_CHILD|SET_LIGHTING_EFFECT|SET_DYNAMIC_LIGHT_EFFECT_RULE_ENABLE|CAM_SET_LENS_MASK|CAM_MOTOR_MOVE|CAM_MOTOR_TO_PRESET|CAM_REBOOT)\b""").findAll(text).count()
             when (f.name) {
                 // set_device_info (the device and, wrapped in control_child, one socket), fw_download,
                 // set_led_info, set_auto_off_config and the two effect calls: each from one user action.
-                "Devices.kt" -> assertEquals("Devices.kt: the write call sites", 8, writes)
+                // Cameras: privacy mode, a pan/tilt step, a saved position and restart, each from one user action.
+                "Devices.kt" -> assertEquals("Devices.kt: the write call sites", 12, writes)
                 else -> assertEquals("${f.name} sends a write", 0, writes)
             }
         }
@@ -105,6 +156,13 @@ class ReadOnlyPathsTest {
         val refreshFn = devices.substringAfter("suspend fun refresh(").substringBefore("suspend fun set(")
         assertFalse(refreshFn.contains("TapoMethods.SET") || refreshFn.contains("TapoMethods.FW"))
         val addFn = devices.substringAfter("suspend fun add(").substringBefore("suspend fun remove(")
-        assertFalse(addFn.contains("TapoMethods.SET") || addFn.contains("TapoMethods.FW"))
+        assertFalse(addFn.contains("TapoMethods.SET") || addFn.contains("TapoMethods.FW") || addFn.contains("TapoMethods.CAM_") || addFn.contains("cameraCommand("))
+        // Adding and refreshing a camera only read; each camera write sits in its own user action.
+        assertFalse(refreshFn.contains("TapoMethods.CAM_") || refreshFn.contains("cameraCommand("))
+        fun fn(name: String) = devices.substringAfter("suspend fun $name(").substringBefore("\n    }\n")
+        assertTrue(fn("setPrivacy").contains("TapoMethods.CAM_SET_LENS_MASK"))
+        assertTrue(fn("moveCamera").contains("TapoMethods.CAM_MOTOR_MOVE,"))
+        assertTrue(fn("gotoCameraPreset").contains("TapoMethods.CAM_MOTOR_TO_PRESET"))
+        assertTrue(fn("rebootCamera").contains("TapoMethods.CAM_REBOOT"))
     }
 }

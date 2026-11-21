@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +43,8 @@ import com.vknxworks.tapoctrl.ui.components.CtrlButton
 import com.vknxworks.tapoctrl.ui.components.CtrlTextField
 import com.vknxworks.tapoctrl.ui.components.Group
 import com.vknxworks.tapoctrl.ui.components.GroupRow
+import com.vknxworks.tapoctrl.ui.components.GroupSwitch
+import com.vknxworks.tapoctrl.ui.components.WarningCard
 import com.vknxworks.tapoctrl.ui.components.ScreenTopBar
 import com.vknxworks.tapoctrl.ui.components.ctrlFieldColors
 import com.vknxworks.tapoctrl.ui.lock.GuardWindow
@@ -69,6 +72,13 @@ fun AccountScreen() {
     var show by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var confirmForget by remember { mutableStateOf(false) }
+    val keeps by c.account.keepsPassword.collectAsStateWithLifecycle()
+    val complete by c.account.complete.collectAsStateWithLifecycle()
+    var keepPassword by remember { mutableStateOf(false) }
+    // Read once off the main thread, so the page knows whether the saved account keeps the password.
+    LaunchedEffect(saved) {
+        if (saved) withContext(Dispatchers.IO) { c.account.refreshFlags() }
+    }
     // The password field is sensitive: no overlays from other apps while this page shows.
     GuardWindow(true, sensitive = true)
 
@@ -76,8 +86,12 @@ fun AccountScreen() {
         ScreenTopBar(stringResource(R.string.account_title))
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding().imePadding().padding(bottom = 24.dp)) {
             if (saved) {
-                Group(footer = stringResource(R.string.account_saved_footer)) {
-                    GroupRow(stringResource(R.string.account_saved), stringResource(R.string.account_saved_sub), icon = Icons.Outlined.Key)
+                Group(footer = stringResource(if (keeps) R.string.account_saved_footer_password else R.string.account_saved_footer)) {
+                    GroupRow(
+                        stringResource(R.string.account_saved),
+                        stringResource(if (keeps) R.string.account_saved_sub_password else R.string.account_saved_sub),
+                        icon = Icons.Outlined.Key,
+                    )
                     GroupRow(
                         stringResource(R.string.account_forget),
                         icon = Icons.Outlined.DeleteOutline,
@@ -86,6 +100,9 @@ fun AccountScreen() {
                         onClick = { confirmForget = true },
                     )
                 }
+            }
+            if (saved && !complete) {
+                WarningCard(stringResource(R.string.account_incomplete), Icons.Outlined.Key, Modifier.padding(horizontal = Gutter, vertical = 6.dp))
             }
             Column(Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
@@ -121,14 +138,26 @@ fun AccountScreen() {
                     colors = ctrlFieldColors(),
                     modifier = Modifier.fillMaxWidth(),
                 )
+            }
+            // The one case where the password itself is kept: older firmware's login version 1 sends it.
+            Group(footer = stringResource(R.string.account_keep_password_footer)) {
+                GroupSwitch(
+                    stringResource(R.string.account_keep_password),
+                    stringResource(R.string.account_keep_password_sub),
+                    checked = keepPassword,
+                    onChange = { keepPassword = it },
+                )
+            }
+            Column(Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 CtrlButton(
                     stringResource(R.string.account_save),
                     onClick = {
                         busy = true
                         val e = email
                         val p = password
+                        val keep = keepPassword
                         scope.launch {
-                            val ok = withContext(Dispatchers.Default) { c.account.save(e, p) }
+                            val ok = withContext(Dispatchers.Default) { c.account.save(e, p, keep) }
                             busy = false
                             if (ok) {
                                 password = ""

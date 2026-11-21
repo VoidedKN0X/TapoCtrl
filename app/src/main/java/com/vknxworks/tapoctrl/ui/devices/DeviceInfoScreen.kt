@@ -57,7 +57,7 @@ fun DeviceInfoScreen(id: String) {
                 )
                 GroupRow(
                     stringResource(R.string.info_protocol),
-                    state?.error?.let { errorMessage(LocalContext.current, it) } ?: stringResource(R.string.info_protocol_klap),
+                    state?.error?.let { errorMessage(LocalContext.current, it) } ?: stringResource(if (state?.legacyProtocol == true) R.string.info_protocol_legacy else R.string.info_protocol_klap),
                 )
             }
         }

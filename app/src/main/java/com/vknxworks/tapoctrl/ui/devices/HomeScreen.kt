@@ -24,6 +24,8 @@ import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.ViewAgenda
+import androidx.compose.material.icons.outlined.Videocam
+import androidx.compose.material.icons.outlined.VideocamOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -70,6 +72,7 @@ import com.vknxworks.tapoctrl.ui.components.StatusTag
 import com.vknxworks.tapoctrl.ui.components.TabTitle
 import com.vknxworks.tapoctrl.ui.nav.AccountRoute
 import com.vknxworks.tapoctrl.ui.nav.AddRoute
+import com.vknxworks.tapoctrl.ui.nav.CameraRoute
 import com.vknxworks.tapoctrl.ui.nav.DeviceRoute
 import com.vknxworks.tapoctrl.ui.nav.LocalNavigator
 import com.vknxworks.tapoctrl.ui.theme.CtrlColors
@@ -216,7 +219,7 @@ fun HomeScreen() {
                     } else {
                         items(shown, key = { it.id }) { d ->
                             val s = states[d.id]
-                            DeviceTile(d, s, compact = settings.grid, onOpen = { nav.navigate(DeviceRoute(d.id)) }, onToggle = { toggle(d, s) })
+                            DeviceTile(d, s, compact = settings.grid, onOpen = { if (d.isCamera) nav.navigate(CameraRoute(d.id)) else nav.navigate(DeviceRoute(d.id)) }, onToggle = { toggle(d, s) })
                         }
                     }
                 }
@@ -267,7 +270,7 @@ private fun DeviceTile(d: SavedDevice, s: DeviceState?, compact: Boolean, onOpen
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
                 Icon(kindIcon(kind), null, Modifier.size(24.dp), tint = if (active) CtrlColors.AccentText else CtrlColors.Muted)
                 Spacer(Modifier.weight(1f))
-                PowerButton(s?.info?.on, canToggle, onToggle)
+                if (d.isCamera) CameraMark(s) else PowerButton(s?.info?.on, canToggle, onToggle)
             }
             Spacer(Modifier.height(14.dp))
             Text(d.label(s), style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -284,7 +287,7 @@ private fun DeviceTile(d: SavedDevice, s: DeviceState?, compact: Boolean, onOpen
                     StatusTag(status, active)
                 }
                 Spacer(Modifier.width(12.dp))
-                PowerButton(s?.info?.on, canToggle, onToggle, size = 64.dp)
+                if (d.isCamera) CameraMark(s) else PowerButton(s?.info?.on, canToggle, onToggle, size = 64.dp)
             }
         }
     }
@@ -356,3 +359,15 @@ private fun RoomPicker(current: String, rooms: List<String>, onDismiss: () -> Un
 
 private const val ROOM_NONE = "\u0000none"
 private const val ROOM_NEW = "\u0000new"
+
+/** A camera's tile shows its privacy mode instead of a power button; it's changed on the camera's page. */
+@Composable
+private fun CameraMark(s: DeviceState?) {
+    val privacy = s?.camera?.privacy
+    Icon(
+        if (privacy == true) Icons.Outlined.VideocamOff else Icons.Outlined.Videocam,
+        stringResource(if (privacy == true) R.string.status_privacy_on else R.string.camera),
+        Modifier.size(28.dp),
+        tint = if (privacy == false && s?.error == null) CtrlColors.AccentText else CtrlColors.Muted,
+    )
+}

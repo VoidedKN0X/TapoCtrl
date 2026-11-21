@@ -38,8 +38,12 @@ data class Found(
     val mac: String? = null,
     /** "KLAP" for current firmware, "AES" for the older securePassthrough firmware. */
     val encryption: String? = null,
+    /** The login version older (securePassthrough) firmware announces ("lv"): 2 means it checks hashes only. */
+    val loginVersion: Int? = null,
 ) {
-    val legacy: Boolean get() = encryption != null && !encryption.equals("KLAP", ignoreCase = true)
+    val legacy: Boolean get() = encryption != null && !encryption.equals("KLAP", ignoreCase = true) && !camera
+    /** Tapo cameras (SMART.IPCAMERA): HTTPS on port 443 with their own certificate. */
+    val camera: Boolean get() = type?.contains("CAMERA", ignoreCase = true) == true
 }
 
 /**
@@ -74,7 +78,7 @@ object Discovery {
         val found = java.util.concurrent.ConcurrentHashMap<String, Found>()
         fun add(f: Found) {
             val merged = found.merge(f.ip, f) { a, b ->
-                Found(a.ip, a.model ?: b.model, a.type ?: b.type, a.mac ?: b.mac, a.encryption ?: b.encryption)
+                Found(a.ip, a.model ?: b.model, a.type ?: b.type, a.mac ?: b.mac, a.encryption ?: b.encryption, a.loginVersion ?: b.loginVersion)
             }
             if (merged != null) onFound(merged)
         }
@@ -169,6 +173,7 @@ object Discovery {
             type = s(r, "device_type"),
             mac = s(r, "mac"),
             encryption = s(r["mgt_encrypt_schm"] as? JsonObject, "encrypt_type"),
+            loginVersion = ((r["mgt_encrypt_schm"] as? JsonObject)?.get("lv") as? JsonPrimitive)?.content?.toIntOrNull(),
         )
     }
 }

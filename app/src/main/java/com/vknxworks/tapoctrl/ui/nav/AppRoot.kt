@@ -13,6 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.vknxworks.tapoctrl.ui.devices.AccountScreen
 import com.vknxworks.tapoctrl.ui.devices.AddDeviceScreen
+import com.vknxworks.tapoctrl.ui.devices.CameraScreen
 import com.vknxworks.tapoctrl.ui.devices.DeviceInfoScreen
 import com.vknxworks.tapoctrl.ui.devices.DeviceScreen
 import com.vknxworks.tapoctrl.ui.devices.EnergyScreen
@@ -33,6 +34,7 @@ fun AppRoot() {
                 composable<AddRoute> { AddDeviceScreen() }
                 composable<AccountRoute> { AccountScreen() }
                 composable<DeviceRoute> { DeviceScreen(it.toRoute<DeviceRoute>().id) }
+                composable<CameraRoute> { CameraScreen(it.toRoute<CameraRoute>().id) }
                 composable<EnergyRoute> { EnergyScreen(it.toRoute<EnergyRoute>().id) }
                 composable<DeviceInfoRoute> { DeviceInfoScreen(it.toRoute<DeviceInfoRoute>().id) }
                 composable<FirmwareRoute> { FirmwareScreen(it.toRoute<FirmwareRoute>().id) }

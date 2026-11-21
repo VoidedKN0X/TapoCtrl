@@ -32,8 +32,21 @@ sealed class TapoException(message: String, cause: Throwable? = null) : Exceptio
     class WrongAccount : TapoException("Wrong account")
     /** No account saved yet: TapoCtrl doesn't contact the device at all. */
     class NoAccount : TapoException("No account")
-    /** Older firmware with the securePassthrough protocol, which TapoCtrl doesn't speak yet. */
+    /** Older firmware without KLAP: [SmartClient] then uses the securePassthrough protocol ([PassthroughClient]). */
     class LegacyFirmware : TapoException("Legacy firmware")
+    /**
+     * The saved account is from before cameras and older firmware were supported, so it lacks the values they
+     * check. Entering the account again adds them.
+     */
+    class AccountIncomplete : TapoException("Account needs entering again")
+    /** Older firmware that checks the password itself, which you chose not to keep (Tapo account screen). */
+    class NeedsPassword : TapoException("Needs the password")
+    /** A camera refuses logins for a while after too many wrong ones. */
+    class Locked(val seconds: Int?) : TapoException("Locked")
+    /** The camera's certificate isn't the one you confirmed when you added it. Nothing was sent. */
+    class CertificateChanged : TapoException("Certificate changed")
+    /** The camera asks for a login variant TapoCtrl doesn't have ([what] says which). Nothing was sent. */
+    class Unsupported(val what: String) : TapoException("Unsupported: $what")
     /** The device answered a request with a non-zero error_code. */
     class DeviceError(val code: Int) : TapoException("Device error $code")
 }
@@ -42,7 +55,15 @@ sealed class TapoException(message: String, cause: Throwable? = null) : Exceptio
 internal object LanHttp {
     class Reply(val code: Int, val body: ByteArray, val cookies: List<String>)
 
-    fun post(ip: Inet4Address, path: String, body: ByteArray, cookie: String?, connectMs: Int = 3000, readMs: Int = 6000): Reply {
+    fun post(
+        ip: Inet4Address,
+        path: String,
+        body: ByteArray,
+        cookie: String?,
+        connectMs: Int = 3000,
+        readMs: Int = 6000,
+        contentType: String = "application/octet-stream",
+    ): Reply {
         if (!LanAddress.isPrivate(ip)) throw TapoException.NotLocal()
         val url = URL("http", LanAddress.text(ip), 80, path)
         val c = url.openConnection(Proxy.NO_PROXY) as HttpURLConnection
@@ -53,7 +74,7 @@ internal object LanHttp {
             c.readTimeout = readMs
             c.requestMethod = "POST"
             c.doOutput = true
-            c.setRequestProperty("Content-Type", "application/octet-stream")
+            c.setRequestProperty("Content-Type", contentType)
             c.setRequestProperty("Accept", "*/*")
             if (cookie != null) c.setRequestProperty("Cookie", cookie)
             c.setFixedLengthStreamingMode(body.size)

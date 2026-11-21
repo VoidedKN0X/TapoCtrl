@@ -14,6 +14,9 @@ import kotlinx.serialization.Serializable
 /** One device: power, light controls, energy and its actions. */
 @Serializable data class DeviceRoute(val id: String)
 
+/** One camera: privacy mode, pan and tilt, saved positions, restart. */
+@Serializable data class CameraRoute(val id: String)
+
 /** Energy use graphs (today, 7 days, 30 days, 12 months) for a plug that measures energy. Read-only. */
 @Serializable data class EnergyRoute(val id: String)
 

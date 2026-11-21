@@ -25,7 +25,11 @@ import com.vknxworks.tapoctrl.tapo.EnergyRange
 import com.vknxworks.tapoctrl.tapo.EnergySeries
 import com.vknxworks.tapoctrl.tapo.EnergyUsage
 import com.vknxworks.tapoctrl.tapo.FirmwareInfo
-import com.vknxworks.tapoctrl.tapo.KlapClient
+import com.vknxworks.tapoctrl.net.PinnedTls
+import com.vknxworks.tapoctrl.tapo.Camera
+import com.vknxworks.tapoctrl.tapo.CameraClient
+import com.vknxworks.tapoctrl.tapo.CameraStatus
+import com.vknxworks.tapoctrl.tapo.SmartClient
 import com.vknxworks.tapoctrl.tapo.TapoException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -65,7 +69,17 @@ data class SavedDevice(
     val mac: String = "",
     /** The room you put it in ("Living room"), or empty. The list's order is your own order. */
     val room: String = "",
-)
+    /**
+     * Cameras: the SHA-256 fingerprint of the camera's own certificate, as you confirmed it when adding the
+     * camera. Only that certificate is trusted for it.
+     */
+    val certSha256: String = "",
+    /** Older (securePassthrough) firmware: the login version the device announced in a scan (2: hashes only); 0 when unknown. */
+    val loginVersion: Int = 0,
+) {
+    /** A Tapo camera (SMART.IPCAMERA): HTTPS with its own certificate, and its own requests. */
+    val isCamera: Boolean get() = type.contains("CAMERA", ignoreCase = true)
+}
 
 /** What TapoCtrl currently knows about a device. */
 data class DeviceState(
@@ -86,6 +100,10 @@ data class DeviceState(
     /** Light presets saved on the device, and a colour bulb's built-in effects. */
     val presets: List<LightPreset>? = null,
     val bulbEffects: List<BulbEffect>? = null,
+    /** Cameras: model, name, privacy mode, features and saved positions. */
+    val camera: CameraStatus? = null,
+    /** True when the device has older firmware and is reached with securePassthrough instead of KLAP. */
+    val legacyProtocol: Boolean = false,
 )
 
 sealed interface AddResult {
@@ -93,6 +111,11 @@ sealed interface AddResult {
     data object AlreadyAdded : AddResult
     data object NotLocal : AddResult
     data object NoAnswer : AddResult
+    /**
+     * A camera: its certificate's fingerprint, for you to confirm before anything is sent to it. Then
+     * [DeviceRepository.addCamera].
+     */
+    data class ConfirmCertificate(val ip: String, val fingerprint: String, val hint: Found?) : AddResult
 }
 
 /**
@@ -250,18 +273,35 @@ class DeviceRepository(
     private val _states = MutableStateFlow<Map<String, DeviceState>>(emptyMap())
     val states: StateFlow<Map<String, DeviceState>> = _states
 
-    private val clients = HashMap<String, KlapClient>()
+    private val clients = HashMap<String, SmartClient>()
+    private val cameras = HashMap<String, CameraClient>()
 
-    private fun client(ip: String): KlapClient? {
+    /** Plugs, bulbs, strips, switches and hubs: KLAP, or securePassthrough on older firmware (picked by itself). */
+    private fun client(ip: String): SmartClient? {
         val addr = LanAddress.parse(ip) ?: return null
         synchronized(clients) {
-            return clients.getOrPut(ip) { KlapClient(addr) { account.hashes() } }
+            return clients.getOrPut(ip) {
+                SmartClient(addr, { account.hashes() }, { account.parts() }) {
+                    devices.value.firstOrNull { it.ip == ip }?.loginVersion?.takeIf { it > 0 }
+                }
+            }
+        }
+    }
+
+    /** Cameras: HTTPS trusting only the certificate you confirmed for this address. */
+    private fun cameraClient(ip: String): CameraClient? {
+        val addr = LanAddress.parse(ip) ?: return null
+        synchronized(cameras) {
+            return cameras.getOrPut(ip) {
+                CameraClient(addr, { devices.value.firstOrNull { it.ip == ip && it.isCamera }?.certSha256 }) { account.parts() }
+            }
         }
     }
 
     /** Forget every open session (after the account changes). */
     fun resetSessions() {
         synchronized(clients) { clients.values.forEach { it.reset() }; clients.clear() }
+        synchronized(cameras) { cameras.values.forEach { it.reset() }; cameras.clear() }
         _states.update { m -> m.mapValues { it.value.copy(error = null) } }
     }
 
@@ -292,16 +332,21 @@ class DeviceRepository(
     private suspend fun current(id: String): SavedDevice? =
         devices.value.firstOrNull { it.id == id } ?: saved().firstOrNull { it.id == id }
 
-    /** Adds a device by address. It's added when it answers, even if your account doesn't fit yet. */
+    /**
+     * Adds a device by address. It's added when it answers, even if your account doesn't fit yet. A camera (from
+     * the scan, or an address that answers only on HTTPS) first returns [AddResult.ConfirmCertificate].
+     */
     suspend fun add(ip: String, hint: Found? = null): AddResult {
         val addr = LanAddress.parse(ip) ?: return AddResult.NotLocal
         val text = LanAddress.text(addr)
         saved().firstOrNull { it.ip == text }?.let { return AddResult.AlreadyAdded }
+        if (hint?.camera == true) return cameraCertificate(text, hint) ?: AddResult.NoAnswer
         val c = client(text)!!
         val info = try {
             DeviceReads.info(c)
         } catch (e: TapoException.Unreachable) {
-            return AddResult.NoAnswer
+            // No plug or bulb there: a camera answers only on HTTPS.
+            return if (hint == null) cameraCertificate(text, null) ?: AddResult.NoAnswer else AddResult.NoAnswer
         } catch (e: TapoException) {
             null
         }
@@ -319,10 +364,52 @@ class DeviceRepository(
             model = info?.model ?: hint?.model.orEmpty(),
             type = info?.type ?: hint?.type.orEmpty(),
             mac = info?.mac ?: hint?.mac.orEmpty(),
+            loginVersion = hint?.loginVersion ?: 0,
         )
         save { it + d }
         setState(d.id) { DeviceState(info = info, updatedAt = if (info != null) System.currentTimeMillis() else 0) }
         if (info == null) refresh(d.id)
+        return AddResult.Added(d)
+    }
+
+    /** Reads the certificate a camera presents (the TLS handshake stops there; nothing is sent). Null: no answer. */
+    private suspend fun cameraCertificate(ip: String, hint: Found?): AddResult.ConfirmCertificate? = withContext(Dispatchers.IO) {
+        val addr = LanAddress.parse(ip) ?: return@withContext null
+        try {
+            AddResult.ConfirmCertificate(ip, PinnedTls.fingerprint(PinnedTls.fetchLeaf(addr)), hint)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Adds a camera after you confirmed its certificate's [fingerprint]: saved with that fingerprint, then read
+     * (getDeviceInfo, privacy mode, features). Only reads.
+     */
+    suspend fun addCamera(ip: String, fingerprint: String, hint: Found?): AddResult {
+        val addr = LanAddress.parse(ip) ?: return AddResult.NotLocal
+        val text = LanAddress.text(addr)
+        saved().firstOrNull { it.ip == text }?.let { return AddResult.AlreadyAdded }
+        val mac = hint?.mac.orEmpty()
+        val old = if (mac.isNotEmpty()) saved().firstOrNull { it.isCamera && it.mac.isNotEmpty() && normMac(it.mac) == normMac(mac) } else null
+        if (old != null) {
+            // The same camera at a new address: move it, with the certificate you just confirmed.
+            save { list -> list.map { if (it.id == old.id) it.copy(ip = text, certSha256 = fingerprint) else it } }
+            synchronized(cameras) { cameras.remove(old.ip)?.reset() }
+            refresh(old.id)
+            return AddResult.Added(old.copy(ip = text, certSha256 = fingerprint))
+        }
+        val d = SavedDevice(
+            id = UUID.randomUUID().toString(),
+            ip = text,
+            model = hint?.model.orEmpty(),
+            type = hint?.type?.takeIf { it.contains("CAMERA", true) } ?: CAMERA_TYPE,
+            mac = mac,
+            certSha256 = fingerprint,
+        )
+        save { it + d }
+        synchronized(cameras) { cameras.remove(text)?.reset() }
+        refresh(d.id)
         return AddResult.Added(d)
     }
 
@@ -347,11 +434,12 @@ class DeviceRepository(
 
     suspend fun refresh(id: String) {
         val d = current(id) ?: return
+        if (d.isCamera) return refreshCamera(d)
         val c = client(d.ip) ?: return
         setState(id) { it.copy(busy = true) }
         try {
             val info = DeviceReads.info(c)
-            setState(id) { it.copy(info = info, error = null, busy = false, updatedAt = System.currentTimeMillis()) }
+            setState(id) { it.copy(info = info, error = null, busy = false, updatedAt = System.currentTimeMillis(), legacyProtocol = c.usesLegacy) }
             // Which features it has: asked once (component_nego), then its sockets or sensors with each refresh.
             val components = _states.value[id]?.components ?: try {
                 DeviceReads.components(c)
@@ -373,6 +461,22 @@ class DeviceRepository(
             }
         } catch (e: TapoException) {
             setState(id) { it.copy(error = e, busy = false) }
+        }
+    }
+
+    /** A camera's info, privacy mode, features and saved positions. Only reads. */
+    private suspend fun refreshCamera(d: SavedDevice) {
+        val c = cameraClient(d.ip) ?: return
+        setState(d.id) { it.copy(busy = true) }
+        try {
+            val cam = DeviceReads.camera(c, _states.value[d.id]?.camera?.components?.takeIf { it.isNotEmpty() })
+            setState(d.id) { it.copy(camera = cam, error = null, busy = false, updatedAt = System.currentTimeMillis()) }
+            val mac = cam.mac.orEmpty()
+            if ((cam.name.isNotBlank() && cam.name != d.name) || (cam.model.isNotBlank() && cam.model != d.model) || (mac.isNotBlank() && mac != d.mac)) {
+                save { list -> list.map { if (it.id == d.id) it.copy(name = cam.name.ifBlank { it.name }, model = cam.model.ifBlank { it.model }, mac = mac.ifBlank { it.mac }) else it } }
+            }
+        } catch (e: TapoException) {
+            setState(d.id) { it.copy(error = e, busy = false) }
         }
     }
 
@@ -543,6 +647,42 @@ class DeviceRepository(
         }
     }
 
+    /** Sends one camera command. Returns the error, or null when it worked. */
+    private suspend fun cameraCommand(id: String, method: String, params: JsonObject): TapoException? {
+        val d = current(id)?.takeIf { it.isCamera } ?: return null
+        val c = cameraClient(d.ip) ?: return TapoException.NotLocal()
+        return try {
+            c.call(method, params)
+            null
+        } catch (e: TapoException) {
+            e
+        }
+    }
+
+    /** Privacy mode on or off (setLensMaskConfig). Only from a tap on the camera's privacy control. */
+    suspend fun setPrivacy(id: String, on: Boolean): TapoException? {
+        setState(id) { s -> s.copy(camera = s.camera?.copy(privacy = on)) }
+        val e = cameraCommand(id, TapoMethods.CAM_SET_LENS_MASK, Camera.setLensMaskParams(on))
+        refresh(id)
+        return e
+    }
+
+    /** Pans and tilts by one step (motorMove). Only from a tap on an arrow. */
+    suspend fun moveCamera(id: String, x: Int, y: Int): TapoException? =
+        cameraCommand(id, TapoMethods.CAM_MOTOR_MOVE, Camera.moveParams(x, y))
+
+    /** Turns to a saved position (motorMoveToPreset). Only from a tap on that position. */
+    suspend fun gotoCameraPreset(id: String, presetId: String): TapoException? =
+        cameraCommand(id, TapoMethods.CAM_MOTOR_TO_PRESET, Camera.gotoPresetParams(presetId))
+
+    /** Restarts the camera (rebootDevice). Only after the confirmation dialog; never sent twice. */
+    suspend fun rebootCamera(id: String): TapoException? {
+        val e = cameraCommand(id, TapoMethods.CAM_REBOOT, Camera.rebootParams())
+        val ip = current(id)?.ip
+        if (ip != null) synchronized(cameras) { cameras[ip]?.reset() }
+        return e
+    }
+
     /** Puts a device in a room (empty: no room). Only on this phone; nothing is sent to the device. */
     suspend fun setRoom(id: String, room: String) {
         val clean = room.filterNot { it.isISOControl() }.trim().take(40)
@@ -621,13 +761,19 @@ class DeviceRepository(
         save { list ->
             list.map { d ->
                 val f = if (d.mac.isNotEmpty()) byMac[normMac(d.mac)] else null
-                if (f != null && f.ip != d.ip) d.copy(ip = f.ip) else d
+                when {
+                    f == null -> d
+                    // A camera keeps its confirmed certificate: at the new address only that one is trusted.
+                    d.isCamera -> d.copy(ip = f.ip)
+                    else -> d.copy(ip = f.ip, loginVersion = f.loginVersion ?: d.loginVersion)
+                }
             }
         }
     }
 
     companion object {
         fun normMac(m: String) = m.uppercase().replace('-', ':')
+        const val CAMERA_TYPE = "SMART.IPCAMERA"
     }
 }
 
