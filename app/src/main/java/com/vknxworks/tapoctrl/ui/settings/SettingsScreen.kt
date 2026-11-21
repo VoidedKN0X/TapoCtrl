@@ -105,6 +105,7 @@ fun SettingsScreen() {
                 ) { v -> set { it.copy(currency = v) } }
             }
             PrivacyAndSecurityGroup(settings)
+            SettingsFileGroup(settings)
         }
     }
     if (editTariff) {

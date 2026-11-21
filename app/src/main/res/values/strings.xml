@@ -238,4 +238,37 @@
     <string name="effect">Effect</string>
     <string name="effect_off">Off</string>
     <string name="preset_n">Preset %1$d</string>
+    <!-- Settings export and import -->
+    <string name="settings_file_group">Settings file</string>
+    <string name="settings_file_footer">The file holds TapoCtrl\'s settings and your device list (addresses, names, models, MAC addresses and rooms), never your Tapo account and nothing of the app lock. It isn\'t encrypted, so keep it somewhere private. Importing adds devices you don\'t have yet and takes rooms from the file; it can turn on Hide in screenshots and Hide in recent apps and shorten the lock time, but never turns them off or makes the lock wait longer.</string>
+    <string name="settings_file_export">Export settings</string>
+    <string name="settings_file_export_sub">Save settings and device list to a file you choose</string>
+    <string name="settings_file_import">Import settings</string>
+    <string name="settings_file_import_sub">Read them from a TapoCtrl settings file</string>
+    <string name="settings_file_saved">Settings exported</string>
+    <string name="settings_file_save_failed">Couldn\'t save the file</string>
+    <string name="settings_file_not_valid">That isn\'t a TapoCtrl settings file</string>
+    <string name="settings_file_too_new">That file is from a newer version of TapoCtrl. Update TapoCtrl first.</string>
+    <string name="settings_file_import_title">Import settings?</string>
+    <string name="settings_file_import_body">From a file made on %1$s. This will change:\n\n%2$s</string>
+    <string name="settings_file_change">%1$s: %2$s → %3$s</string>
+    <string name="settings_file_no_changes">This file has the same settings and devices as TapoCtrl has now (or only settings an import may not change). Nothing to replace.</string>
+    <string name="settings_file_replace">Import</string>
+    <string name="settings_file_close">Close</string>
+    <string name="settings_file_imported">Settings imported</string>
+    <string name="settings_file_on">On</string>
+    <string name="settings_file_off">Off</string>
+    <string name="settings_file_layout">Home layout</string>
+    <string name="settings_file_grid">Grid</string>
+    <string name="settings_file_list">List</string>
+    <string name="settings_file_tariff">Electricity price</string>
+    <string name="settings_file_currency">Currency</string>
+    <plurals name="settings_file_devices_added">
+        <item quantity="one">%d device added to your list</item>
+        <item quantity="other">%d devices added to your list</item>
+    </plurals>
+    <plurals name="settings_file_rooms_changed">
+        <item quantity="one">Room changed for %d device</item>
+        <item quantity="other">Rooms changed for %d devices</item>
+    </plurals>
 </resources>

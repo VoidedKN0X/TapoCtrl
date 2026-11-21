@@ -549,6 +549,11 @@ class DeviceRepository(
         save { list -> list.map { if (it.id == id) it.copy(room = clean) else it } }
     }
 
+    /** Settings > Import settings: the device list merged with a settings file's devices (see SettingsFile.merge). */
+    suspend fun importDevices(transform: (List<SavedDevice>) -> List<SavedDevice>) {
+        save(transform)
+    }
+
     /** Moves a device one place up ([by] < 0) or down in your own order. Only on this phone. */
     suspend fun move(id: String, by: Int) {
         save { list ->

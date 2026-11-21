@@ -23,6 +23,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Settings on the device:** the status light on or off and auto-off (on or off, after how many minutes), where the device has them, and what it does after a power cut (shown only)
 - **Time on:** how long a device was on today, in the last 7 days and in the last 30 days
 - **Rooms and your own order:** put devices in rooms, show one room at a time, and arrange the list the way you like (kept on this phone only)
+- **Settings file:** export TapoCtrl's settings and device list to a file and import them on another phone (never your Tapo account)
 - **Rename** a device (the name is saved on the device, so it shows in the Tapo app too)
 - **Device info:** model, firmware and hardware version, MAC address, Wi-Fi signal and IP address
 - **Firmware updates:** TapoCtrl asks the device whether TP-Link has a newer version, shows the version and release notes, and on your OK tells the device to install it. You can follow the download, install and restart. The device reboots at the end, so a plug briefly cuts power to whatever is plugged into it
