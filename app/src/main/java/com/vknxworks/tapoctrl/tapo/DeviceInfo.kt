@@ -31,15 +31,23 @@ data class DeviceInfo(
     val saturation: Int?,
     val overheated: Boolean,
     val onTimeSeconds: Long?,
+    /** What the device does after a power cut, when it says (plugs and switches). */
+    val powerCut: PowerCutState? = null,
 ) {
     val isLight: Boolean get() = type.contains("BULB", ignoreCase = true) || type.contains("LIGHT", ignoreCase = true)
     val isPlug: Boolean get() = type.contains("PLUG", ignoreCase = true)
+    /** Wall switches and dimmers (S500, S500D, S505, S505D…): type SMART.TAPOSWITCH. */
+    val isSwitch: Boolean get() = type.contains("SWITCH", ignoreCase = true)
+    /** Hubs (H100, H200): type SMART.TAPOHUB. */
+    val isHub: Boolean get() = type.contains("HUB", ignoreCase = true)
     val hasBrightness: Boolean get() = brightness != null
     val hasColorTemp: Boolean get() = colorTemp != null && colorTempRange.first < colorTempRange.last
     val hasColor: Boolean get() = hue != null && saturation != null
     val kind: DeviceKind
         get() = when {
             isPlug -> DeviceKind.PLUG
+            isHub -> DeviceKind.HUB
+            isSwitch -> if (brightness != null) DeviceKind.DIMMER else DeviceKind.SWITCH
             isLight && model.startsWith("L9", ignoreCase = true) -> DeviceKind.STRIP
             isLight -> DeviceKind.BULB
             else -> DeviceKind.OTHER
@@ -69,6 +77,7 @@ data class DeviceInfo(
                 saturation = o.int("saturation"),
                 overheated = o.bool("overheated") == true || o.str("overheat_status").let { it != null && it != "normal" },
                 onTimeSeconds = (o["on_time"] as? JsonPrimitive)?.longOrNull,
+                powerCut = parsePowerCutState(o),
             )
         }
 
@@ -84,7 +93,7 @@ data class DeviceInfo(
     }
 }
 
-enum class DeviceKind { PLUG, BULB, STRIP, OTHER }
+enum class DeviceKind { PLUG, BULB, STRIP, SWITCH, DIMMER, HUB, OTHER }
 
 /** get_energy_usage: today's and this month's energy in Wh, and the power now in W. */
 data class EnergyUsage(val todayWh: Double?, val monthWh: Double?, val powerW: Double?, val todayMinutes: Int?, val monthMinutes: Int?) {

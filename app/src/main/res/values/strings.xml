@@ -184,4 +184,48 @@
     <string name="unreadable_start_empty">Start empty</string>
     <string name="unreadable_start_empty_title">Start with an empty device list?</string>
     <string name="unreadable_start_empty_body">Only do this if trying again doesn\'t help. The list that can\'t be opened is kept aside on this phone, not deleted, but TapoCtrl won\'t show it. You can then add your devices again; your Tapo account and the devices themselves aren\'t changed.</string>
+    <!-- Power strips, hubs, wall switches -->
+    <string name="group_sockets">Sockets</string>
+    <string name="sockets_footer">Each socket switches on its own. A tap sends the change for that socket only.</string>
+    <string name="socket_n">Socket %1$d</string>
+    <string name="group_hub_children">Sensors and switches</string>
+    <string name="hub_children_footer">What the hub reports about the sensors and switches paired with it. Sensors are shown only: TapoCtrl doesn\'t change their settings. Pull down on Home or tap Refresh for the latest readings.</string>
+    <string name="child_offline">Offline</string>
+    <string name="child_low_battery">Battery low</string>
+    <string name="contact_open">Open</string>
+    <string name="contact_closed">Closed</string>
+    <string name="motion_detected">Motion</string>
+    <string name="motion_none">No motion</string>
+
+    <!-- Device settings -->
+    <string name="group_device_settings">Settings on the device</string>
+    <string name="status_light">Status light</string>
+    <string name="status_light_sub">The small light on the device</string>
+    <string name="auto_off">Auto-off</string>
+    <string name="auto_off_sub">Switches off by itself %1$d minutes after it was switched on</string>
+    <string name="auto_off_after">Auto-off after</string>
+    <string name="minutes_value">%1$d min</string>
+    <string name="power_cut">After a power cut</string>
+    <string name="power_cut_last">Last state</string>
+    <string name="power_cut_on">On</string>
+    <string name="power_cut_off">Off</string>
+    <string name="needs_confirming">Needs confirming on your device</string>
+    <string name="power_cut_footer">After a power cut is shown as the device reports it. Changing it isn\'t offered yet: the exact command for it couldn\'t be confirmed from established open-source Tapo projects, and TapoCtrl never sends guessed commands. Use the Tapo app to change it.</string>
+    <string name="group_time_on">Time on</string>
+    <string name="time_on_footer">How long the device was switched on, as the device counts it.</string>
+    <string name="time_on_today">Today</string>
+    <string name="time_on_7d">Last 7 days</string>
+    <string name="time_on_30d">Last 30 days</string>
+
+    <!-- Rooms and your own order -->
+    <string name="room">Room</string>
+    <string name="room_all">All</string>
+    <string name="room_none">No room</string>
+    <string name="room_new">New room…</string>
+    <string name="room_new_title">New room</string>
+    <string name="arrange">Arrange devices</string>
+    <string name="arrange_done">Done</string>
+    <string name="arrange_hint">Move devices up or down and put them in rooms. This is kept on this phone only; nothing is sent to the devices.</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
 </resources>

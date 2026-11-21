@@ -15,7 +15,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DevicesOther
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.Lightbulb
+import androidx.compose.material.icons.outlined.Hub
 import androidx.compose.material.icons.outlined.Power
+import androidx.compose.material.icons.outlined.ToggleOn
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -65,6 +68,8 @@ fun SavedDevice.label(state: DeviceState?): String =
 
 fun SavedDevice.kind(state: DeviceState?): DeviceKind = state?.info?.kind ?: when {
     type.contains("PLUG", true) -> DeviceKind.PLUG
+    type.contains("HUB", true) -> DeviceKind.HUB
+    type.contains("SWITCH", true) -> if (model.contains("D", true) && model.startsWith("S5", true)) DeviceKind.DIMMER else DeviceKind.SWITCH
     type.contains("BULB", true) && model.startsWith("L9", true) -> DeviceKind.STRIP
     type.contains("BULB", true) -> DeviceKind.BULB
     else -> DeviceKind.OTHER
@@ -74,6 +79,9 @@ fun kindIcon(kind: DeviceKind): ImageVector = when (kind) {
     DeviceKind.PLUG -> Icons.Outlined.Power
     DeviceKind.BULB -> Icons.Outlined.Lightbulb
     DeviceKind.STRIP -> Icons.Outlined.LightMode
+    DeviceKind.SWITCH -> Icons.Outlined.ToggleOn
+    DeviceKind.DIMMER -> Icons.Outlined.Tune
+    DeviceKind.HUB -> Icons.Outlined.Hub
     DeviceKind.OTHER -> Icons.Outlined.DevicesOther
 }
 

@@ -17,6 +17,12 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Lights:** brightness, colour temperature, and hue and saturation on colour bulbs and light strips
 - **Energy** on plugs that measure it (such as the P110 and P115): power right now, today's and this month's energy, and an estimated cost from the electricity price you set
 - **Energy graphs** on those plugs: today by the hour, the last 7 and 30 days by the day, and the last 12 months by the month, read from the plug's own energy memory (with a total, the highest bar and the estimated cost). Tap a bar for its value. Reading the history never changes anything on the plug
+- **Power strips:** every socket of a strip (P300 and similar) with its own on/off switch
+- **Wall switches and dimmers** (S500, S500D, S505 and similar): on/off, and brightness on dimmers
+- **Hub sensors, read-only:** the temperature and humidity, contact (open/closed) and motion sensors paired with a Tapo hub (H100, H200), with low-battery and offline marks
+- **Settings on the device:** the status light on or off and auto-off (on or off, after how many minutes), where the device has them, and what it does after a power cut (shown only)
+- **Time on:** how long a device was on today, in the last 7 days and in the last 30 days
+- **Rooms and your own order:** put devices in rooms, show one room at a time, and arrange the list the way you like (kept on this phone only)
 - **Rename** a device (the name is saved on the device, so it shows in the Tapo app too)
 - **Device info:** model, firmware and hardware version, MAC address, Wi-Fi signal and IP address
 - **Firmware updates:** TapoCtrl asks the device whether TP-Link has a newer version, shows the version and release notes, and on your OK tells the device to install it. You can follow the download, install and restart. The device reboots at the end, so a plug briefly cuts power to whatever is plugged into it
@@ -30,8 +36,10 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Devices with current firmware** (the KLAP protocol): Tapo plugs (P100, P105, P110, P115 and similar), bulbs (L510, L530, L630 and similar) and light strips (L900, L920, L930). Kasa devices that use KLAP may work for on/off.
 - **Older firmware** that still uses the earlier "securePassthrough" protocol isn't supported yet. TapoCtrl tells you when a device uses it; updating the device's firmware with the Tapo app once usually moves it to KLAP.
 - **Cameras** (C100, C200 and others) aren't supported in this version: no live view (RTSP) and no controls. The scan lists them but can't add them.
-- **Power strips** (P300 and similar): only the strip as a whole; its single sockets aren't shown yet.
-- **Hubs, sensors, switches, schedules, timers and scenes** aren't supported yet.
+- **Power strips** (P300 and similar): each socket can be switched. Energy is shown for the strip as a whole where it measures it.
+- **Hubs and sensors:** temperature/humidity (T310, T315), contact (T110) and motion (T100) sensors are shown read-only through their hub. Buttons (S200) are listed without readings. Sensor settings, alarms and the hub's own siren aren't supported.
+- **After a power cut:** shown as the device reports it, not changed: the command to change it couldn't be confirmed from established open-source Tapo projects, so it shows "Needs confirming on your device".
+- **Schedules, timers and scenes** aren't supported (TapoCtrl never switches anything on its own).
 - **Setting up a new device** (joining it to your Wi-Fi) still needs the Tapo app once. After that, TapoCtrl can do the rest.
 - **Remote control from outside your home** isn't possible: TapoCtrl only works on the same network as your devices. That's the point.
 

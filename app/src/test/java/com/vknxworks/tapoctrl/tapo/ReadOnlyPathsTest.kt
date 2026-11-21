@@ -64,6 +64,9 @@ class ReadOnlyPathsTest {
         assertTrue(TapoMethods.READS.all { it.startsWith("get_") })
         assertFalse(TapoMethods.isRead(TapoMethods.SET_DEVICE_INFO))
         assertFalse(TapoMethods.isRead(TapoMethods.FW_DOWNLOAD))
+        assertFalse(TapoMethods.isRead(TapoMethods.SET_LED_INFO))
+        assertFalse(TapoMethods.isRead(TapoMethods.SET_AUTO_OFF_CONFIG))
+        assertFalse(TapoMethods.isRead(TapoMethods.CONTROL_CHILD))
     }
 
     @Test fun writesAreNeverRepeatedAfterABrokenConnection() {
@@ -82,9 +85,11 @@ class ReadOnlyPathsTest {
             if (f.name != "TapoMethods.kt") {
                 assertFalse("${f.name} names a write method directly", text.contains("\"set_device_info\"") || text.contains("\"fw_download\""))
             }
-            val writes = Regex("""TapoMethods\.(SET_DEVICE_INFO|FW_DOWNLOAD)""").findAll(text).count()
+            val writes = Regex("""TapoMethods\.(SET_DEVICE_INFO|FW_DOWNLOAD|SET_LED_INFO|SET_AUTO_OFF_CONFIG|CONTROL_CHILD)""").findAll(text).count()
             when (f.name) {
-                "Devices.kt" -> assertEquals("Devices.kt: one set_device_info and one fw_download call site", 2, writes)
+                // set_device_info (the device and, wrapped in control_child, one socket), fw_download,
+                // set_led_info and set_auto_off_config: each from one user action.
+                "Devices.kt" -> assertEquals("Devices.kt: the write call sites", 6, writes)
                 else -> assertEquals("${f.name} sends a write", 0, writes)
             }
         }

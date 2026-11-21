@@ -44,7 +44,23 @@ import com.vknxworks.tapoctrl.R
 import com.vknxworks.tapoctrl.container
 import com.vknxworks.tapoctrl.data.DeviceState
 import com.vknxworks.tapoctrl.data.settings.AppSettings
+import com.vknxworks.tapoctrl.tapo.ChildInfo
+import com.vknxworks.tapoctrl.tapo.ChildKind
 import com.vknxworks.tapoctrl.tapo.DeviceInfo
+import com.vknxworks.tapoctrl.tapo.PowerCutState
+import com.vknxworks.tapoctrl.ui.components.GroupChoice
+import com.vknxworks.tapoctrl.ui.components.GroupSwitch
+import androidx.compose.material.icons.outlined.DevicesOther
+import androidx.compose.material.icons.outlined.Lightbulb
+import androidx.compose.material.icons.outlined.Power
+import androidx.compose.material.icons.outlined.PowerOff
+import androidx.compose.material.icons.outlined.RadioButtonChecked
+import androidx.compose.material.icons.outlined.SensorDoor
+import androidx.compose.material.icons.outlined.Sensors
+import androidx.compose.material.icons.outlined.Thermostat
+import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.TimerOff
+import androidx.compose.material.icons.outlined.ToggleOn
 import com.vknxworks.tapoctrl.tapo.TapoException
 import com.vknxworks.tapoctrl.ui.components.ConfirmDialog
 import com.vknxworks.tapoctrl.ui.components.CtrlHeroCard
@@ -89,6 +105,8 @@ fun DeviceScreen(id: String) {
 
     LaunchedEffect(id) {
         c.devices.refresh(id)
+        // The status light, auto-off and time-on: reads only.
+        c.devices.refreshSettings(id)
         // Plugs: keep the power reading fresh while this page is open.
         while (isActive) {
             val s = c.devices.states.value[id]
@@ -124,7 +142,8 @@ fun DeviceScreen(id: String) {
             }
 
             val on = info?.on
-            CtrlHeroCard(
+            // A hub has no power of its own to switch: its sensors and switches are listed below.
+            if (info?.isHub != true) CtrlHeroCard(
                 label = info?.model ?: device.model.ifBlank { device.ip },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 10.dp),
                 meta = device.ip,
@@ -157,7 +176,8 @@ fun DeviceScreen(id: String) {
                 )
             }
 
-            if (info != null && info.isLight) LightControls(info, ::send)
+            if (info != null && (info.isLight || info.isSwitch)) LightControls(info, ::send)
+            state?.children?.takeIf { it.isNotEmpty() }?.let { children -> ChildrenGroup(id, info, children) }
             if (info?.isPlug == true && state.energySupported == true) {
                 EnergyGroup(state, settings)
                 // Graphs of the plug's own energy history (reads only).
@@ -171,6 +191,8 @@ fun DeviceScreen(id: String) {
                     )
                 }
             }
+
+            if (state != null) DeviceSettingsGroup(id, state)
 
             Group(stringResource(R.string.group_device)) {
                 GroupRow(stringResource(R.string.rename), info?.nickname ?: device.name, icon = Icons.Outlined.DriveFileRenameOutline, showChevron = true, onClick = if (info != null) ({ renaming = true }) else null)
@@ -286,5 +308,140 @@ private fun EnergyGroup(state: DeviceState, settings: AppSettings) {
             modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp),
         )
 
+    }
+}
+
+/** A power strip's sockets (each with its own switch) or a hub's sensors and switches (sensors read-only). */
+@Composable
+private fun ChildrenGroup(id: String, info: DeviceInfo?, children: List<ChildInfo>) {
+    val context = LocalContext.current
+    val c = context.container
+    val scope = rememberCoroutineScope()
+    val sorted = children.sortedWith(compareBy<ChildInfo> { it.position ?: Int.MAX_VALUE }.thenBy { it.nickname })
+    Group(
+        stringResource(if (info?.isHub == true) R.string.group_hub_children else R.string.group_sockets),
+        footer = stringResource(if (info?.isHub == true) R.string.hub_children_footer else R.string.sockets_footer),
+    ) {
+        sorted.forEachIndexed { i, child ->
+            val name = child.nickname.ifBlank { stringResource(R.string.socket_n, child.position ?: (i + 1)) }
+            if (child.switchable) {
+                GroupSwitch(
+                    name,
+                    childStatus(child).takeIf { it.isNotEmpty() },
+                    checked = child.on == true,
+                    icon = if (child.kind == ChildKind.SWITCH) Icons.Outlined.ToggleOn else Icons.Outlined.Power,
+                    onChange = { v ->
+                        scope.launch { c.devices.setChildOn(id, child.deviceId, v)?.let { toast(context, errorMessage(context, it)) } }
+                    },
+                )
+            } else {
+                GroupRow(
+                    name,
+                    listOf(child.model, childStatus(child)).filter { it.isNotEmpty() }.joinToString(" · "),
+                    icon = childIcon(child.kind),
+                    value = sensorValue(child),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun childStatus(child: ChildInfo): String = listOfNotNull(
+    if (child.online == false) stringResource(R.string.child_offline) else null,
+    if (child.lowBattery == true) stringResource(R.string.child_low_battery) else null,
+).joinToString(" · ")
+
+@Composable
+private fun sensorValue(child: ChildInfo): String? = when (child.kind) {
+    ChildKind.TEMPERATURE -> listOfNotNull(
+        child.temperature?.let { String.format(Locale.getDefault(), if (child.fahrenheit) "%.1f °F" else "%.1f °C", it) },
+        child.humidity?.let { "$it %" },
+    ).joinToString(" · ").ifEmpty { null }
+    ChildKind.CONTACT -> stringResource(if (child.open == true) R.string.contact_open else R.string.contact_closed)
+    ChildKind.MOTION -> stringResource(if (child.detected == true) R.string.motion_detected else R.string.motion_none)
+    else -> null
+}
+
+private fun childIcon(kind: ChildKind) = when (kind) {
+    ChildKind.TEMPERATURE -> Icons.Outlined.Thermostat
+    ChildKind.CONTACT -> Icons.Outlined.SensorDoor
+    ChildKind.MOTION -> Icons.Outlined.Sensors
+    ChildKind.BUTTON -> Icons.Outlined.RadioButtonChecked
+    ChildKind.SWITCH -> Icons.Outlined.ToggleOn
+    ChildKind.SOCKET -> Icons.Outlined.Power
+    ChildKind.OTHER -> Icons.Outlined.DevicesOther
+}
+
+/**
+ * The device's own settings: the status light and auto-off (each only when the device has it), what it does after a
+ * power cut (shown, not changed: the command to change it isn't established), and how long it was on.
+ */
+@Composable
+private fun DeviceSettingsGroup(id: String, state: DeviceState) {
+    val context = LocalContext.current
+    val c = context.container
+    val scope = rememberCoroutineScope()
+    val led = state.led
+    val autoOff = state.autoOff
+    val powerCut = state.info?.powerCut
+    val usage = state.usage
+    if (led?.on != null || autoOff != null || powerCut != null) {
+        Group(stringResource(R.string.group_device_settings), footer = if (powerCut != null) stringResource(R.string.power_cut_footer) else null) {
+            if (led?.on != null) {
+                GroupSwitch(
+                    stringResource(R.string.status_light),
+                    stringResource(R.string.status_light_sub),
+                    checked = led.on == true,
+                    icon = Icons.Outlined.Lightbulb,
+                    onChange = { v ->
+                        scope.launch { c.devices.setLed(id, v)?.let { toast(context, errorMessage(context, it)) } }
+                    },
+                )
+            }
+            if (autoOff != null) {
+                GroupSwitch(
+                    stringResource(R.string.auto_off),
+                    stringResource(R.string.auto_off_sub, autoOff.delayMin),
+                    checked = autoOff.enabled,
+                    icon = Icons.Outlined.TimerOff,
+                    onChange = { v ->
+                        scope.launch { c.devices.setAutoOff(id, v, autoOff.delayMin)?.let { toast(context, errorMessage(context, it)) } }
+                    },
+                )
+                val choices = (listOf(5, 10, 15, 30, 60, 120, 240, 480) + autoOff.delayMin).distinct().sorted()
+                GroupChoice(
+                    stringResource(R.string.auto_off_after),
+                    choices.map { it to stringResource(R.string.minutes_value, it) },
+                    autoOff.delayMin,
+                    icon = Icons.Outlined.Timer,
+                    onPick = { m ->
+                        scope.launch { c.devices.setAutoOff(id, autoOff.enabled, m)?.let { toast(context, errorMessage(context, it)) } }
+                    },
+                )
+            }
+            if (powerCut != null) {
+                GroupRow(
+                    stringResource(R.string.power_cut),
+                    stringResource(R.string.needs_confirming),
+                    icon = Icons.Outlined.PowerOff,
+                    value = stringResource(
+                        when (powerCut) {
+                            PowerCutState.LAST_STATE -> R.string.power_cut_last
+                            PowerCutState.ALWAYS_ON -> R.string.power_cut_on
+                            PowerCutState.ALWAYS_OFF -> R.string.power_cut_off
+                        },
+                    ),
+                )
+            }
+        }
+    }
+    if (usage != null && (usage.todayMin != null || usage.past7Min != null || usage.past30Min != null)) {
+        fun hm(m: Int?) = m?.let { String.format(Locale.getDefault(), "%d:%02d h", it / 60, it % 60) } ?: "–"
+        Group(stringResource(R.string.group_time_on), footer = stringResource(R.string.time_on_footer)) {
+            GroupRow(stringResource(R.string.time_on_today), value = hm(usage.todayMin))
+            GroupRow(stringResource(R.string.time_on_7d), value = hm(usage.past7Min))
+            GroupRow(stringResource(R.string.time_on_30d), value = hm(usage.past30Min))
+        }
     }
 }

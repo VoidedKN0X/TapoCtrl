@@ -45,6 +45,19 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vknxworks.tapoctrl.R
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.KeyboardArrowUp
+import androidx.compose.material.icons.outlined.MeetingRoom
+import androidx.compose.material.icons.outlined.SwapVert
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.vknxworks.tapoctrl.ui.components.ChoiceSheet
+import com.vknxworks.tapoctrl.ui.components.NameDialog
+import com.vknxworks.tapoctrl.ui.theme.CtrlShapes
 import com.vknxworks.tapoctrl.container
 import com.vknxworks.tapoctrl.data.DeviceState
 import com.vknxworks.tapoctrl.data.SavedDevice
@@ -79,6 +92,12 @@ fun HomeScreen() {
     val settings by c.settings.settings.collectAsStateWithLifecycle()
     val accountSaved by c.account.saved.collectAsStateWithLifecycle()
     var refreshing by remember { mutableStateOf(false) }
+    var arranging by rememberSaveable { mutableStateOf(false) }
+    var roomFilter by rememberSaveable { mutableStateOf<String?>(null) }
+    var roomFor by remember { mutableStateOf<SavedDevice?>(null) }
+    val rooms = remember(devices) { devices.map { it.room }.filter { it.isNotBlank() }.distinct().sortedBy { it.lowercase() } }
+    val room = roomFilter?.takeIf { it in rooms }
+    val shown = remember(devices, room) { devices.filter { room == null || it.room == room } }
 
     LifecycleResumeEffect(Unit) {
         val job = scope.launch { c.devices.refreshAll() }
@@ -98,7 +117,14 @@ fun HomeScreen() {
             Modifier.statusBarsPadding(),
             label = if (devices.isEmpty()) null else pluralStringResource(R.plurals.device_count, devices.size, devices.size),
             trailing = {
-                if (devices.isNotEmpty()) {
+                if (devices.size > 1) {
+                    CtrlSquareButton(
+                        if (arranging) Icons.Outlined.Check else Icons.Outlined.SwapVert,
+                        stringResource(if (arranging) R.string.arrange_done else R.string.arrange),
+                        onClick = { arranging = !arranging },
+                    )
+                }
+                if (devices.isNotEmpty() && !arranging) {
                     CtrlSquareButton(
                         if (settings.grid) Icons.Outlined.ViewAgenda else Icons.Outlined.GridView,
                         stringResource(if (settings.grid) R.string.show_list else R.string.show_grid),
@@ -156,7 +182,7 @@ fun HomeScreen() {
                 }
             } else {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(if (settings.grid) 2 else 1),
+                    columns = GridCells.Fixed(if (settings.grid && !arranging) 2 else 1),
                     modifier = Modifier.fillMaxSize().navigationBarsPadding(),
                     contentPadding = PaddingValues(start = Gutter, end = Gutter, top = 4.dp, bottom = 24.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -165,12 +191,42 @@ fun HomeScreen() {
                     if (!accountSaved) {
                         item(span = { GridItemSpan(maxLineSpan) }) { AccountPrompt(Modifier) { nav.navigate(AccountRoute) } }
                     }
-                    items(devices, key = { it.id }) { d ->
-                        val s = states[d.id]
-                        DeviceTile(d, s, compact = settings.grid, onOpen = { nav.navigate(DeviceRoute(d.id)) }, onToggle = { toggle(d, s) })
+                    if (rooms.isNotEmpty() && !arranging) {
+                        item(span = { GridItemSpan(maxLineSpan) }, key = "rooms") {
+                            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                RoomChip(stringResource(R.string.room_all), room == null) { roomFilter = null }
+                                rooms.forEach { r -> RoomChip(r, room == r) { roomFilter = r } }
+                            }
+                        }
+                    }
+                    if (arranging) {
+                        item(span = { GridItemSpan(maxLineSpan) }, key = "arrange-hint") {
+                            Text(stringResource(R.string.arrange_hint), style = MaterialTheme.typography.bodySmall, color = CtrlColors.Muted)
+                        }
+                        items(devices, key = { it.id }) { d ->
+                            val i = devices.indexOf(d)
+                            ArrangeRow(
+                                d.label(states[d.id]),
+                                d.room,
+                                onUp = if (i > 0) ({ scope.launch { c.devices.move(d.id, -1) } }) else null,
+                                onDown = if (i < devices.lastIndex) ({ scope.launch { c.devices.move(d.id, +1) } }) else null,
+                                onRoom = { roomFor = d },
+                            )
+                        }
+                    } else {
+                        items(shown, key = { it.id }) { d ->
+                            val s = states[d.id]
+                            DeviceTile(d, s, compact = settings.grid, onOpen = { nav.navigate(DeviceRoute(d.id)) }, onToggle = { toggle(d, s) })
+                        }
                     }
                 }
             }
+        }
+    }
+    roomFor?.let { d ->
+        RoomPicker(d.room, rooms, onDismiss = { roomFor = null }) { picked ->
+            roomFor = null
+            scope.launch { c.devices.setRoom(d.id, picked) }
         }
     }
     if (confirmStartEmpty) {
@@ -233,3 +289,70 @@ private fun DeviceTile(d: SavedDevice, s: DeviceState?, compact: Boolean, onOpen
         }
     }
 }
+
+@Composable
+private fun RoomChip(text: String, selected: Boolean, onClick: () -> Unit) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(text, style = CtrlType.Data) },
+        shape = CtrlShapes.Chip,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = CtrlColors.Surface,
+            labelColor = CtrlColors.Text,
+            selectedContainerColor = CtrlColors.Accent,
+            selectedLabelColor = CtrlColors.OnAccent,
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = selected,
+            borderColor = CtrlColors.ControlOutline,
+            selectedBorderColor = CtrlColors.Accent,
+        ),
+    )
+}
+
+/** "Arrange": one device with up, down and its room. Nothing is sent to the device. */
+@Composable
+private fun ArrangeRow(name: String, room: String, onUp: (() -> Unit)?, onDown: (() -> Unit)?, onRoom: () -> Unit) {
+    CtrlCard(Modifier.fillMaxWidth(), padding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(room.ifBlank { stringResource(R.string.room_none) }, style = CtrlType.Data, color = CtrlColors.Muted, maxLines = 1)
+            }
+            CtrlSquareButton(Icons.Outlined.MeetingRoom, stringResource(R.string.room), onClick = onRoom, size = 40.dp)
+            Spacer(Modifier.width(6.dp))
+            CtrlSquareButton(Icons.Outlined.KeyboardArrowUp, stringResource(R.string.move_up), onClick = { onUp?.invoke() }, size = 40.dp, enabled = onUp != null)
+            Spacer(Modifier.width(6.dp))
+            CtrlSquareButton(Icons.Outlined.KeyboardArrowDown, stringResource(R.string.move_down), onClick = { onDown?.invoke() }, size = 40.dp, enabled = onDown != null)
+        }
+    }
+}
+
+/** Pick a room you already use, no room, or name a new one. */
+@Composable
+private fun RoomPicker(current: String, rooms: List<String>, onDismiss: () -> Unit, onPick: (String) -> Unit) {
+    var naming by remember { mutableStateOf(false) }
+    val none = stringResource(R.string.room_none)
+    val new = stringResource(R.string.room_new)
+    if (naming) {
+        NameDialog(stringResource(R.string.room_new_title), "", onDismiss = onDismiss) { name -> onPick(name) }
+    } else {
+        ChoiceSheet(
+            stringResource(R.string.room),
+            listOf(ROOM_NONE to none) + rooms.map { it to it } + listOf(ROOM_NEW to new),
+            current.ifBlank { ROOM_NONE },
+            onDismiss = onDismiss,
+        ) { picked ->
+            when (picked) {
+                ROOM_NEW -> naming = true
+                ROOM_NONE -> onPick("")
+                else -> onPick(picked)
+            }
+        }
+    }
+}
+
+private const val ROOM_NONE = "\u0000none"
+private const val ROOM_NEW = "\u0000new"

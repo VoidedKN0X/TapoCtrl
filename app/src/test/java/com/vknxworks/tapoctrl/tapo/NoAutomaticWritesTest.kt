@@ -18,7 +18,7 @@ import java.io.File
  */
 class NoAutomaticWritesTest {
     private val src = File("src/main/java/com/vknxworks/tapoctrl")
-    private val writeCalls = Regex("""\.(setOn|set|rename|startFirmwareDownload)\(""")
+    private val writeCalls = Regex("""\.(setOn|set|rename|startFirmwareDownload|setChildOn|setLed|setAutoOff)\(""")
 
     private fun sources() = src.walkTopDown().filter { it.extension == "kt" }.toList().also {
         assertTrue("sources not found from ${File(".").absolutePath}", it.isNotEmpty())
@@ -52,17 +52,17 @@ class NoAutomaticWritesTest {
         val allowed = setOf("Devices.kt", "DeviceScreen.kt", "HomeScreen.kt", "FirmwareScreen.kt")
         for (f in sources()) {
             val text = f.readText()
-            val calls = Regex("""devices\.(setOn|set|rename|startFirmwareDownload)\(""").findAll(text).count()
+            val calls = Regex("""devices\.(setOn|set|rename|startFirmwareDownload|setChildOn|setLed|setAutoOff)\(""").findAll(text).count()
             if (f.name !in allowed) assertEquals("${f.name} changes a device", 0, calls)
         }
         // Each screen call sits in a click, commit or confirm handler.
         for (name in listOf("DeviceScreen.kt", "HomeScreen.kt", "FirmwareScreen.kt")) {
             val lines = sources().first { it.name == name }.readLines()
             lines.forEachIndexed { i, line ->
-                if (Regex("""devices\.(setOn|set|rename|startFirmwareDownload)\(""").containsMatchIn(line)) {
+                if (Regex("""devices\.(setOn|set|rename|startFirmwareDownload|setChildOn|setLed|setAutoOff)\(""").containsMatchIn(line)) {
                     val context = lines.subList(maxOf(0, i - 12), i + 1).joinToString("\n")
                     assertTrue("$name:${i + 1} isn't inside a tap handler:\n$context",
-                        Regex("""onClick|onCommit|onConfirm|onCheckedChange|fun send\(|fun toggle\(|fun install\(|Dialog\(""").containsMatchIn(context))
+                        Regex("""onClick|onCommit|onConfirm|onCheckedChange|onChange|onPick|fun send\(|fun toggle\(|fun install\(|Dialog\(""").containsMatchIn(context))
                 }
             }
         }

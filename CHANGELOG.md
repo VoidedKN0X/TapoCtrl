@@ -4,6 +4,23 @@ What changed in each TapoCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+Changes on `main` that aren't in a release yet. Built and checked by CI only: none of this has been run on a phone or tried with real Tapo devices.
+
+### New
+
+- **Single sockets on power strips.** A power strip (P300 and similar) now shows each of its sockets on its page, in order, with its own name and an on/off switch. A tap switches only that socket: TapoCtrl sends `set_device_info` for that socket through the strip (`control_child`, the way python-kasa does it). The strip's page asks which features the device has (`component_nego`) once and then reads its sockets (`get_child_device_list`) with each refresh; both are reads.
+- **Wall switches and dimmers.** Tapo wall switches (S500, S505 and similar, device type `SMART.TAPOSWITCH`) show with their own icon and the big on/off button, and dimmers (S500D, S505D) also get a brightness slider. Switching and dimming use the same `set_device_info` as plugs and bulbs, and only from your tap.
+- **Hub sensors, read-only.** A Tapo hub (H100, H200) no longer shows an on/off button; its page lists the sensors and switches paired with it: temperature and humidity (T310, T315), contact sensors as open or closed (T110), motion sensors as motion or no motion (T100), and buttons (S200, without readings), each with "Battery low" and "Offline" when the hub says so. Switches paired with a hub get an on/off switch like a strip's sockets. TapoCtrl only reads sensors; it doesn't change their settings.
+- **Settings on the device.** A device's page has a new "Settings on the device" section, with what that device supports (it asks `component_nego`): the **status light** on or off (`get_led_info` / `set_led_info`), **auto-off** on or off and after how many minutes (5 minutes to 8 hours; `get_auto_off_config` / `set_auto_off_config`), and **after a power cut** (last state, on or off) as the device reports it. Changing the power-cut behaviour isn't offered: the command for it couldn't be confirmed from established open-source Tapo projects, so that row says "Needs confirming on your device". Each change is sent only when you tap it, and never sent twice after a broken connection.
+- **Time on.** Devices that count it show how long they were on today, in the last 7 days and in the last 30 days (`get_device_usage`, read-only).
+- **Rooms and your own order.** The new **Arrange devices** button on Home lets you move devices up and down and put each in a room (pick one you already use, a new one, or none). As soon as there is a room, Home shows room chips (All and each room) to show one room at a time. Rooms and the order are kept in TapoCtrl's encrypted device list on this phone only; nothing is sent to the devices.
+
+### Safety
+
+- The new reads (`component_nego`, `get_child_device_list`, `get_led_info`, `get_auto_off_config`, `get_device_usage`) are on the read-only list, so they're the only new things TapoCtrl may ask a device without a tap. The new writes (`set_led_info`, `set_auto_off_config`, `control_child`) are not, so they are never sent on their own and never repeated after a broken connection. The unit tests that guard this were extended to the new writes (CI doesn't run unit tests).
+
 ## v0.3.1 (2026-11-21)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published. It is the first release built with the new build tools (Android Gradle Plugin 9, stricter code shrinking), so update over your installed version and check that your data and settings are still there. It has also never been tried with real Tapo devices.

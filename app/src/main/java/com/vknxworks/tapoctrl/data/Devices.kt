@@ -8,7 +8,13 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.vknxworks.tapoctrl.data.crypto.DataKeyStore
 import com.vknxworks.tapoctrl.data.crypto.SealedText
 import com.vknxworks.tapoctrl.net.LanAddress
+import com.vknxworks.tapoctrl.tapo.AutoOffConfig
+import com.vknxworks.tapoctrl.tapo.ChildInfo
+import com.vknxworks.tapoctrl.tapo.ChildReply
+import com.vknxworks.tapoctrl.tapo.Components
 import com.vknxworks.tapoctrl.tapo.DeviceInfo
+import com.vknxworks.tapoctrl.tapo.DeviceUsage
+import com.vknxworks.tapoctrl.tapo.LedInfo
 import com.vknxworks.tapoctrl.tapo.DeviceReads
 import com.vknxworks.tapoctrl.tapo.TapoMethods
 import com.vknxworks.tapoctrl.tapo.DownloadState
@@ -54,6 +60,8 @@ data class SavedDevice(
     val model: String = "",
     val type: String = "",
     val mac: String = "",
+    /** The room you put it in ("Living room"), or empty. The list's order is your own order. */
+    val room: String = "",
 )
 
 /** What TapoCtrl currently knows about a device. */
@@ -65,6 +73,13 @@ data class DeviceState(
     /** null: not asked yet; false: the device doesn't measure energy. */
     val energySupported: Boolean? = null,
     val updatedAt: Long = 0,
+    /** Feature ids from component_nego; null until asked, empty when the device doesn't say. */
+    val components: Set<String>? = null,
+    /** Power-strip sockets, or a hub's sensors and switches; null when it has none or wasn't asked yet. */
+    val children: List<ChildInfo>? = null,
+    val led: LedInfo? = null,
+    val autoOff: AutoOffConfig? = null,
+    val usage: DeviceUsage? = null,
 )
 
 sealed interface AddResult {
@@ -331,6 +346,21 @@ class DeviceRepository(
         try {
             val info = DeviceReads.info(c)
             setState(id) { it.copy(info = info, error = null, busy = false, updatedAt = System.currentTimeMillis()) }
+            // Which features it has: asked once (component_nego), then its sockets or sensors with each refresh.
+            val components = _states.value[id]?.components ?: try {
+                DeviceReads.components(c)
+            } catch (e: TapoException.DeviceError) {
+                emptySet()
+            }
+            setState(id) { it.copy(components = components) }
+            if (Components.CHILD_DEVICE in components) {
+                try {
+                    val children = DeviceReads.children(c)
+                    setState(id) { it.copy(children = children) }
+                } catch (e: TapoException.DeviceError) {
+                    setState(id) { it.copy(children = emptyList()) }
+                }
+            }
             // Keep the saved name, model and MAC in step with the device.
             if (info.nickname != d.name || info.model != d.model || (info.mac ?: "") != d.mac || info.type != d.type) {
                 save { list -> list.map { if (it.id == id) it.copy(name = info.nickname, model = info.model, type = info.type, mac = info.mac ?: it.mac) else it } }
@@ -368,6 +398,96 @@ class DeviceRepository(
         val e = set(id, buildJsonObject { put("nickname", DeviceInfo.toB64(name)) })
         if (e == null) save { list -> list.map { if (it.id == id) it.copy(name = name) else it } }
         return e
+    }
+
+    /**
+     * The device's own settings and usage time, for its page: the status light, auto-off and how long it was on.
+     * Only reads, and only what component_nego says the device has.
+     */
+    suspend fun refreshSettings(id: String) {
+        val d = current(id) ?: return
+        val c = client(d.ip) ?: return
+        val components = _states.value[id]?.components ?: return
+        suspend fun <T> readOrNull(block: suspend () -> T): T? = try {
+            block()
+        } catch (e: TapoException) {
+            null
+        }
+        val led = if (Components.LED in components) readOrNull { DeviceReads.led(c) } else null
+        val autoOff = if (Components.AUTO_OFF in components) readOrNull { DeviceReads.autoOff(c) } else null
+        val usage = if (Components.DEVICE_USAGE in components) readOrNull { DeviceReads.usage(c) } else null
+        setState(id) { it.copy(led = led ?: it.led, autoOff = autoOff ?: it.autoOff, usage = usage ?: it.usage) }
+    }
+
+    /**
+     * Switches one socket of a power strip (or one switch on a hub): set_device_info for that child, sent through
+     * its parent with control_child. Only from a tap on that socket's switch. Returns the error, or null.
+     */
+    suspend fun setChildOn(id: String, childId: String, on: Boolean): TapoException? {
+        val d = current(id) ?: return null
+        val c = client(d.ip) ?: return TapoException.NotLocal()
+        setState(id) { s -> s.copy(children = s.children?.map { if (it.deviceId == childId) it.copy(on = on) else it }) }
+        return try {
+            val reply = c.call(TapoMethods.CONTROL_CHILD, buildJsonObject {
+                put("device_id", childId)
+                put("requestData", buildJsonObject {
+                    put("method", TapoMethods.SET_DEVICE_INFO)
+                    put("params", buildJsonObject { put("device_on", on) })
+                })
+            })
+            ChildReply.check(reply)
+            refresh(id)
+            null
+        } catch (e: TapoException) {
+            refresh(id)
+            e
+        }
+    }
+
+    /** The status light on or off (set_led_info with the rule changed). Only from a tap on that switch. */
+    suspend fun setLed(id: String, on: Boolean): TapoException? {
+        val d = current(id) ?: return null
+        val c = client(d.ip) ?: return TapoException.NotLocal()
+        val raw = _states.value[id]?.led?.raw ?: return null
+        val params = JsonObject(raw + ("led_rule" to kotlinx.serialization.json.JsonPrimitive(if (on) "always" else "never")))
+        return try {
+            c.call(TapoMethods.SET_LED_INFO, params)
+            refreshSettings(id)
+            null
+        } catch (e: TapoException) {
+            e
+        }
+    }
+
+    /** Auto-off on or off, and after how many minutes. Only from a tap on that setting. */
+    suspend fun setAutoOff(id: String, enabled: Boolean, minutes: Int): TapoException? {
+        val d = current(id) ?: return null
+        val c = client(d.ip) ?: return TapoException.NotLocal()
+        return try {
+            c.call(TapoMethods.SET_AUTO_OFF_CONFIG, buildJsonObject {
+                put("enable", enabled)
+                put("delay_min", minutes.coerceIn(1, 24 * 60))
+            })
+            refreshSettings(id)
+            null
+        } catch (e: TapoException) {
+            e
+        }
+    }
+
+    /** Puts a device in a room (empty: no room). Only on this phone; nothing is sent to the device. */
+    suspend fun setRoom(id: String, room: String) {
+        val clean = room.filterNot { it.isISOControl() }.trim().take(40)
+        save { list -> list.map { if (it.id == id) it.copy(room = clean) else it } }
+    }
+
+    /** Moves a device one place up ([by] < 0) or down in your own order. Only on this phone. */
+    suspend fun move(id: String, by: Int) {
+        save { list ->
+            val from = list.indexOfFirst { it.id == id }
+            val to = from + by
+            if (from < 0 || to !in list.indices) list else list.toMutableList().apply { add(to, removeAt(from)) }
+        }
     }
 
     /** Energy for plugs that measure it; remembers when a device doesn't. */
