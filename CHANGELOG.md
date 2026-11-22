@@ -4,6 +4,27 @@ What changed in each TapoCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+### Fixed
+
+- **Cameras that stopped with "doesn't support yet".** In 0.6.0 that message came only from the newest camera login (TPAP, used by C200 firmware 1.4.x and other recent camera firmware), when the camera's answer to the first login step (`pake_register`) had something TapoCtrl didn't take. TapoCtrl now also takes, as the Tapo app does: an answer **without a PBKDF2 round count** (the app then uses 10000), the password transform **MD5-crypt** (`password_shadow`, `passwd_id` 1, alongside 2 and 5), a SHA-256-crypt salt given **without the `$5$` marker** (as pytapo reads it) or only as `passwd_salt`, a `passwd_id` sent as text, and a SHA-256-crypt prefix with `rounds=5000` written out. Each of these is checked before anything derived from your password is sent. The whole TPAP login was also run on a computer against a simulated C200 (pytapo's model of a C200 on firmware 1.4.6, the one confirmed on real cameras), including the variants above; it hasn't been tried on a real camera yet.
+- **Error messages now say which camera login step stopped and why.** "Not supported yet" now ends with details such as `TPAP pake_register: password transform password_shadow passwd_id=3 [passwd_id,passwd_prefix]` or `no dev_share (fields: …)`: the step, and the names (never the values) of what the camera asked for. A camera that refuses a login step says which one ("error -40401 at TPAP pake_share", "at login encrypt_type 3, step 1"), and an answer TapoCtrl doesn't recognise is named instead of shown as "error 0". On the camera's page the message can be selected and copied. The message also says plainly that nothing derived from your password was sent.
+- **Adding a camera by its address without an account saved yet.** It was added as if it were a plug. TapoCtrl now checks whether the address answers the plug protocol (a random handshake start, nothing else) and, if not, shows the camera's certificate to confirm, as it does with an account saved.
+- **A camera the scan found but that doesn't answer on HTTPS** now says exactly that ("The scan found a camera at …, but it didn't answer on HTTPS (port 443)") instead of "Nothing answered".
+- **Scanning with Tailscale (or another VPN) on said "Connect this phone to your Wi-Fi".** With a VPN on, Android reports the VPN as the phone's network, and TapoCtrl only looked at that one, whose address (Tailscale's 100.x) isn't on your Wi-Fi. TapoCtrl now looks at all of the phone's networks, skips VPNs, and scans the Wi-Fi's subnet as before. Because a VPN with a route to your home network can carry the traffic to your devices instead of the Wi-Fi, the scan now also sends TP-Link's discovery packet to each address on its own (as well as the broadcast), which reaches devices either way.
+
+### New
+
+- **Scan a network range**, for when you aren't on Wi-Fi (for example away from home on mobile data with Tailscale). Type a range such as `192.168.1.0/24`; TapoCtrl remembers the last one. A VPN doesn't carry TP-Link's discovery broadcast, so TapoCtrl asks each address on its own: the discovery packet to UDP port 20002 and the same random handshake start as the normal scan, up to 48 addresses at a time, with longer timeouts than on Wi-Fi, a progress bar ("120 of 254 addresses asked") and a **Stop** button. Ranges are limited to private networks (10.x, 172.16–31.x, 192.168.x and the shared range 100.64–127.x) and at most a /22 (1022 addresses). It needs a route to that network through your VPN, such as a Tailscale subnet route; the screen says so. Tapping **Scan network** without Wi-Fi now opens this instead of only saying to connect to Wi-Fi. Like every scan, it only reads.
+- **Adding by address works through Tailscale.** Nothing in adding a device or camera by its address needs Wi-Fi; with a VPN route to your home network it works from anywhere. The "No answer" message now asks whether the phone is on the device's network at home or through a VPN, instead of only "on the same Wi-Fi".
+- **The shared address range 100.64.0.0/10 counts as local.** It's the range carriers and Tailscale use and it's never routed on the internet, so TapoCtrl now accepts it alongside 10.x, 172.16–31.x, 192.168.x and 169.254.x. TP-Link's cloud and every public address are still refused before connecting.
+
+### Safety
+
+- No new permission: still only `INTERNET` and `ACCESS_NETWORK_STATE`. TapoCtrl doesn't read the Wi-Fi name, uses no location, and never switches between addresses or networks by itself.
+- Scanning (Wi-Fi or range) only sends the discovery packet and the random handshake start; it never logs in or sends a device a command. A new unit test checks this in the source (no device method, login or account value in the scan code; reading the phone's networks sends nothing), along with the range rules. New camera tests use the recorded C200 discovery reply from python-kasa, the tapo crate's camera fixtures and the C200 1.4.6 password transform, with expected values computed with pytapo and `openssl passwd`. Unit tests run on a computer only (CI doesn't run them); nothing was run on a phone or a real camera.
+
 ## v0.6.0 (2026-11-21)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.

@@ -24,7 +24,7 @@
     <string name="status_old_firmware">Oudere firmware</string>
     <string name="status_unknown">Verbinden</string>
     <string name="err_not_local">Dat is geen adres op je thuisnetwerk. TapoCtrl verbindt alleen met privéadressen zoals 192.168.x.x of 10.x.x.x.</string>
-    <string name="err_unreachable">Geen antwoord. Zit het toestel in het stopcontact en op dezelfde wifi als deze telefoon?</string>
+    <string name="err_unreachable">Geen antwoord. Staat het toestel aan, en zit deze telefoon op zijn netwerk (thuis, of via een vpn zoals Tailscale met een route ernaartoe)?</string>
     <string name="err_wrong_account">Dit toestel aanvaardt je Tapo-account niet; controleer het e-mailadres en wachtwoord bij Tapo-account.</string>
     <string name="err_no_account">Geef eerst je Tapo-account in, zodat TapoCtrl met dit toestel kan praten.</string>
     <string name="err_legacy">TapoCtrl kon niet praten met de oudere firmware van dit toestel. De firmware bijwerken met de Tapo-app kan helpen.</string>
@@ -36,13 +36,13 @@
     <string name="added_short">Toegevoegd</string>
     <string name="add_already">Dit toestel staat al in je lijst.</string>
     <string name="add_no_answer">Er antwoordde niets op %1$s. Controleer het adres en of het toestel aan staat.</string>
-    <string name="add_ip_hint">Het adres vind je in de lijst met verbonden toestellen van je router. Als je het toestel daar een vast adres geeft, blijft het hetzelfde.</string>
+    <string name="add_ip_hint">Het adres vind je in de lijst met verbonden toestellen van je router. Als je het toestel daar een vast adres geeft, blijft het hetzelfde. Toevoegen via het adres werkt ook via een vpn zoals Tailscale als die een route naar je thuisnetwerk heeft.</string>
     <string name="scan_title">Netwerk scannen</string>
     <string name="scan_network">Netwerk scannen</string>
     <string name="scanning">Scannen…</string>
     <string name="scan_subnet">Bekijkt %1$s</string>
-    <string name="scan_no_wifi">Verbind deze telefoon met je wifi om te scannen.</string>
-    <string name="scan_footer">De scan vraagt elk adres op het wifi-subnet van deze telefoon of het een Tapo-toestel is, en stuurt TP-Links lokale ontdekkingsbericht. Er wordt niets over je account verstuurd en niets verlaat je netwerk.</string>
+    <string name="scan_no_wifi">Niet op wifi. Tik om in plaats daarvan een netwerkbereik te scannen.</string>
+    <string name="scan_footer">Netwerk scannen vraagt elk adres op het wifi-subnet van deze telefoon of het een Tapo-toestel is, ook als een vpn zoals Tailscale aan staat, en stuurt TP-Links lokale ontdekkingsbericht (als broadcast en naar elk adres). Een netwerkbereik wordt op dezelfde manier adres per adres gevraagd. Scannen leest alleen: er wordt niets over je account verstuurd en geen enkel toestel wordt gewijzigd.</string>
     <string name="scan_none">Geen Tapo-toestellen gevonden</string>
     <string name="scan_none_sub">Toestellen op een ander netwerk of een gastwifi zijn van hieruit niet te vinden</string>
     <string name="found_device">Tapo-toestel</string>
@@ -317,7 +317,7 @@
     <string name="err_locked_for">De camera weigert aanmeldingen nog ongeveer %1$d min na te veel foute pogingen. Probeer het later opnieuw.</string>
     <string name="err_locked">De camera weigert een tijdje aanmeldingen na te veel foute pogingen. Probeer het later opnieuw.</string>
     <string name="err_certificate">TapoCtrl vertrouwt het certificaat van deze camera niet: het is niet het certificaat dat je bevestigd hebt, of er werd er op deze telefoon geen bevestigd. Er werd niets verstuurd. Verwijder de camera en voeg hem opnieuw toe om het certificaat te controleren.</string>
-    <string name="err_unsupported">Deze camera vraagt een aanmelding die TapoCtrl nog niet ondersteunt (%1$s). Er werd niets meer verstuurd.</string>
+    <string name="err_unsupported">Deze camera vraagt een aanmelding die TapoCtrl nog niet kan. Er werd niets verstuurd dat van je wachtwoord is afgeleid. Details: %1$s</string>
     <string name="status_certificate">Certificaat controleren</string>
     <string name="status_privacy_on">Privacy aan</string>
     <string name="status_camera_on">Camera aan</string>
@@ -353,4 +353,19 @@
     <string name="cert_body">De camera op %1$s heeft zijn eigen HTTPS-certificaat gemaakt, dus geen instantie staat ervoor in. De SHA-256-vingerafdruk is:</string>
     <string name="cert_note">Bevestig alleen op je eigen thuisnetwerk. TapoCtrl vertrouwt dan alleen precies dit certificaat voor deze camera en stopt met een waarschuwing als het ooit verandert.</string>
     <string name="cert_trust">Vertrouwen en toevoegen</string>
+    <!-- 0.7: scanning through a VPN, camera login details -->
+    <string name="err_device_step">De camera weigerde de aanmelding (fout %1$d bij %2$s).</string>
+    <string name="add_camera_no_answer">De scan vond een camera op %1$s, maar die antwoordde niet via HTTPS (poort 443). Controleer of hij aan staat en of deze telefoon hem kan bereiken.</string>
+    <string name="scan_range">Een netwerkbereik scannen</string>
+    <string name="scan_range_sub">Laatste bereik: %1$s</string>
+    <string name="scan_range_sub_none">Voor een netwerk dat je via een vpn bereikt, zoals 192.168.1.0/24</string>
+    <string name="scan_range_body">Typ het netwerk waarop je Tapo-toestellen zitten, zoals 192.168.1.0/24 (hoogstens een /22, 1022 adressen; alleen privébereiken). Buitenshuis werkt dit alleen via een vpn met een route naar dat netwerk, zoals een Tailscale-subnetroute. Het ontdekkingsbericht van TP-Link gaat niet door een vpn, dus vraagt TapoCtrl elk adres apart; dat duurt iets langer.</string>
+    <string name="scan_range_label">Netwerkbereik</string>
+    <string name="scan_range_invalid">Typ een bereik als adres/prefix, zoals 192.168.1.0/24.</string>
+    <string name="scan_range_too_large">Dat bereik is te groot: hoogstens een /22 (1022 adressen), zoals 192.168.0.0/22.</string>
+    <string name="scan_range_not_private">Alleen privébereiken: 10.x.x.x, 172.16–31.x.x, 192.168.x.x of 100.64–127.x.x.</string>
+    <string name="scan_range_count">%1$d adressen</string>
+    <string name="scan_start">Scannen</string>
+    <string name="scan_progress">%1$d van %2$d adressen gevraagd</string>
+    <string name="scan_stop">Stoppen</string>
 </resources>

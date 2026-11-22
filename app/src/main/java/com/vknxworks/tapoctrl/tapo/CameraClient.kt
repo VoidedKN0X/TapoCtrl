@@ -220,7 +220,7 @@ class CameraClient(
             val code2 = (r2["error_code"] as? JsonPrimitive)?.intOrNull ?: 0
             lockout(r2)?.let { throw TapoException.Locked(it) }
             if (code2 == INVALID_NONCE) throw TapoException.WrongAccount()
-            if (code2 != 0) throw TapoException.DeviceError(code2)
+            if (code2 != 0) throw TapoException.DeviceError(code2, "login encrypt_type 3, step 2")
             val result = r2["result"] as? JsonObject ?: throw TapoException.Unreachable(IOException("No result"))
             val stok = (result["stok"] as? JsonPrimitive)?.content ?: throw TapoException.Unreachable(IOException("No stok"))
             val seq = (result["start_seq"] as? JsonPrimitive)?.intOrNull ?: throw TapoException.Unreachable(IOException("No start_seq"))
@@ -231,7 +231,9 @@ class CameraClient(
             kind = Kind.HASHED
             return loginHashed(secret)
         }
-        throw TapoException.DeviceError(code)
+        // Not a reply TapoCtrl knows: say what came back (codes and field names only).
+        if (code == 0) throw TapoException.Unsupported("login encrypt_type 3, step 1: no nonce (fields: ${fieldNames(r)})")
+        throw TapoException.DeviceError(code, "login encrypt_type 3, step 1")
     }
 
     /** The older login some camera firmware offers: the MD5 of your password, upper-case, over the pinned connection. */
@@ -273,22 +275,18 @@ class CameraClient(
         })
         lockout(register)?.let { throw TapoException.Locked(it) }
         val reg = register["result"] as? JsonObject
-            ?: throw TapoException.DeviceError((register["error_code"] as? JsonPrimitive)?.intOrNull ?: -1)
-        fun field(k: String) = (reg[k] as? JsonPrimitive)?.content ?: throw TapoException.Unsupported("pake_register without $k")
-        val iterations = field("iterations").toIntOrNull()?.takeIf { it in 1..Spake2p.MAX_ITERATIONS }
-            ?: throw TapoException.Unsupported("PBKDF2 iterations")
-        val salt = unb64(field("dev_salt"))
-        val devShare = unb64(field("dev_share"))
-        val devRandom = unb64(field("dev_random"))
-        val credential = try {
-            CameraLogin.tpapCredential(passcode, reg["extra_crypt"] as? JsonObject)
+            ?: throw TapoException.DeviceError((register["error_code"] as? JsonPrimitive)?.intOrNull ?: -1, "TPAP pake_register")
+        // Everything checked before anything derived from your password is sent (pake_share).
+        val (registration, credential) = try {
+            val parsed = CameraLogin.tpapRegistration(reg)
+            parsed to CameraLogin.tpapCredential(passcode, parsed.extraCrypt)
         } catch (e: CameraLogin.UnsupportedTransform) {
-            throw TapoException.Unsupported(e.what)
+            throw TapoException.Unsupported("TPAP pake_register: ${e.what}")
         }
-        val (w0, w1) = Spake2p.w0w1(credential, salt, iterations)
+        val (w0, w1) = Spake2p.w0w1(credential, registration.salt, registration.iterations)
         val x = BigInteger(1, ByteArray(32).also { random.nextBytes(it) }).mod(P256.N.subtract(BigInteger.ONE)).add(BigInteger.ONE)
-        val proof = Spake2p.prove(w0, w1, x, Spake2p.context(userRandom, devRandom), ByteArray(0), ByteArray(0), devShare)
-            ?: throw TapoException.Unsupported("dev_share")
+        val proof = Spake2p.prove(w0, w1, x, Spake2p.context(userRandom, registration.deviceRandom), ByteArray(0), ByteArray(0), registration.deviceShare)
+            ?: throw TapoException.Unsupported("TPAP pake_register: dev_share isn't a usable P-256 point (${registration.deviceShare.size} bytes)")
         val share = postLogin(buildJsonObject {
             put("sub_method", "pake_share")
             put("user_share", b64(proof.share))
@@ -299,7 +297,7 @@ class CameraClient(
         if (result == null) {
             val code = (share["error_code"] as? JsonPrimitive)?.intOrNull ?: -1
             if (code == SESSION_EXPIRED) return null
-            throw TapoException.DeviceError(code)
+            throw TapoException.DeviceError(code, "TPAP pake_share")
         }
         val devConfirm = (result["dev_confirm"] as? JsonPrimitive)?.content?.let(::unb64)
         if (devConfirm == null || !proof.verify(devConfirm)) throw TapoException.WrongAccount()
@@ -351,6 +349,12 @@ class CameraClient(
             Base64.getDecoder().decode(s)
         } catch (e: IllegalArgumentException) {
             throw TapoException.Unreachable(e)
+        }
+
+        /** The field names of a reply and of its result (never values), for an error message. */
+        internal fun fieldNames(r: JsonObject): String {
+            val inner = (r["result"] as? JsonObject)?.keys?.sorted()?.joinToString(",")
+            return (r.keys.sorted().joinToString(",") + (inner?.let { "; result: $it" } ?: "")).take(160)
         }
 
         private fun randomHex(n: Int) = ByteArray(n).also { random.nextBytes(it) }.hexUpper()

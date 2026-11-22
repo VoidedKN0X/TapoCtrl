@@ -45,10 +45,13 @@ sealed class TapoException(message: String, cause: Throwable? = null) : Exceptio
     class Locked(val seconds: Int?) : TapoException("Locked")
     /** The camera's certificate isn't the one you confirmed when you added it. Nothing was sent. */
     class CertificateChanged : TapoException("Certificate changed")
-    /** The camera asks for a login variant TapoCtrl doesn't have ([what] says which). Nothing was sent. */
+    /**
+     * The camera asks for a login variant TapoCtrl doesn't have. [what] says which step and what it asked for
+     * (no secrets), so a report from the user tells the cases apart. Nothing derived from the password was sent.
+     */
     class Unsupported(val what: String) : TapoException("Unsupported: $what")
-    /** The device answered a request with a non-zero error_code. */
-    class DeviceError(val code: Int) : TapoException("Device error $code")
+    /** The device answered a request with a non-zero error_code ([step]: which camera login step, when it was one). */
+    class DeviceError(val code: Int, val step: String? = null) : TapoException("Device error $code" + (step?.let { " at $it" } ?: ""))
 }
 
 /** One HTTP exchange with a device on port 80. Proxies and redirects are never used. */

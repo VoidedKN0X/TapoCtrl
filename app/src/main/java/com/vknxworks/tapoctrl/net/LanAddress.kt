@@ -7,7 +7,8 @@ import java.net.InetAddress
 /**
  * TapoCtrl only ever connects to addresses on your own network. Every connection goes through [parse], which
  * accepts only a numeric address (no host names, so no DNS lookup) in a private or link-local range:
- * 10/8, 172.16/12, 192.168/16, 169.254/16, fc00::/7 and fe80::/10.
+ * 10/8, 172.16/12, 192.168/16, 169.254/16, fc00::/7 and fe80::/10, and the shared address space 100.64/10
+ * (RFC 6598; never routed on the internet; Tailscale addresses its devices from it).
  */
 object LanAddress {
     private val ipv4 = Regex("""^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$""")
@@ -28,7 +29,8 @@ object LanAddress {
                 b[0] == 10 ||
                     (b[0] == 172 && b[1] in 16..31) ||
                     (b[0] == 192 && b[1] == 168) ||
-                    (b[0] == 169 && b[1] == 254)
+                    (b[0] == 169 && b[1] == 254) ||
+                    (b[0] == 100 && b[1] in 64..127)
             is Inet6Address -> (b[0] and 0xFE) == 0xFC || (b[0] == 0xFE && (b[1] and 0xC0) == 0x80)
             else -> false
         }

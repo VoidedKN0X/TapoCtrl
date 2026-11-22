@@ -64,30 +64,108 @@ internal object CameraLogin {
     /** The passcodes the Tapo app tries, in its order (pytapo `_passcodes`): MD5 (lower-case hex), then SHA-256 (upper-case hex). */
     fun tpapPasscodes(secret: CameraSecret): List<String> = listOf(secret.md5.hex(), secret.sha256Upper)
 
-    /** A transform TapoCtrl can't apply; the login stops and says so. */
+    /** A transform TapoCtrl can't apply; the login stops and says so ([what] names it, without any secret). */
     class UnsupportedTransform(val what: String) : Exception(what)
 
     /**
-     * The SPAKE2+ credential for [passcode] and the camera's `extra_crypt` (pytapo `apply_extra_crypt`):
-     * none: the passcode itself; password_shadow 2: SHA-1 hex; 5: SHA-256-crypt with the camera's salt.
+     * The SPAKE2+ credential for [passcode] and the camera's `extra_crypt` (pytapo `apply_extra_crypt`, the
+     * Tapo app's Spake2pExtraCryptBean as freeKC's tapo-v4-protocol documents it):
+     * none: the passcode itself; password_shadow 1: MD5-crypt ("$1$"), 2: SHA-1 hex, 5: SHA-256-crypt ("$5$"),
+     * each with the camera's salt. Anything else stops the login before pake_share with [UnsupportedTransform].
      */
     fun tpapCredential(passcode: String, extraCrypt: JsonObject?): String {
         if (extraCrypt == null || extraCrypt.isEmpty()) return passcode
         val type = (extraCrypt["type"] as? JsonPrimitive)?.content?.lowercase()
         val params = extraCrypt["params"] as? JsonObject ?: JsonObject(emptyMap())
-        if (type != "password_shadow") throw UnsupportedTransform("extra_crypt ${type ?: "?"}")
-        return when (val id = (params["passwd_id"] as? JsonPrimitive)?.intOrNull) {
+        if (type != "password_shadow") throw UnsupportedTransform("password transform ${describeExtraCrypt(extraCrypt)}")
+        val prefix = (params["passwd_prefix"] as? JsonPrimitive)?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.content
+        val saltParam = (params["passwd_salt"] as? JsonPrimitive)?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.content
+        return when ((params["passwd_id"] as? JsonPrimitive)?.content?.trim()?.toIntOrNull()) {
+            1 -> {
+                val salt = cryptSalt(prefix, "$1$")?.first ?: saltParam?.takeIf { it.isNotEmpty() }
+                    ?: throw UnsupportedTransform("password transform ${describeExtraCrypt(extraCrypt)}, no salt")
+                TpapCrypto.md5Crypt(passcode.toByteArray(Charsets.UTF_8), salt)
+            }
             2 -> MessageDigest.getInstance("SHA-1").digest(passcode.toByteArray(Charsets.UTF_8)).hex()
             5 -> {
-                val prefix = (params["passwd_prefix"] as? JsonPrimitive)?.content
-                val parsed = prefix?.let { TpapCrypto.parseCryptPrefix(it) }
-                val salt = parsed?.first ?: (params["passwd_salt"] as? JsonPrimitive)?.content
-                    ?: throw UnsupportedTransform("password_shadow 5 without a salt")
-                val rounds = parsed?.second ?: (params["passwd_rounds"] as? JsonPrimitive)?.intOrNull
-                TpapCrypto.sha256Crypt(passcode.toByteArray(Charsets.UTF_8), salt, rounds)
+                val fromPrefix = cryptSalt(prefix, "$5$")
+                if (fromPrefix != null) {
+                    // "$5$[rounds=N$]salt$", as the C200 sends it: rounds only when the prefix names them (pytapo, glibc).
+                    TpapCrypto.sha256Crypt(passcode.toByteArray(Charsets.UTF_8), fromPrefix.first, fromPrefix.second, explicitRounds = fromPrefix.second != null)
+                } else {
+                    val salt = saltParam?.takeIf { it.isNotEmpty() }
+                        ?: throw UnsupportedTransform("password transform ${describeExtraCrypt(extraCrypt)}, no salt")
+                    TpapCrypto.sha256Crypt(passcode.toByteArray(Charsets.UTF_8), salt, (params["passwd_rounds"] as? JsonPrimitive)?.content?.toIntOrNull())
+                }
             }
-            else -> throw UnsupportedTransform("password_shadow ${id ?: "?"}")
+            else -> throw UnsupportedTransform("password transform ${describeExtraCrypt(extraCrypt)}")
         }
+    }
+
+    /**
+     * Salt and rounds from a crypt prefix such as "$5$rounds=5000$salt$" or "$5$salt$". A prefix without the
+     * "$n$" marker is taken as the salt itself, as pytapo does. Null when there's no salt in it.
+     */
+    fun cryptSalt(prefix: String?, marker: String): Pair<String, Int?>? {
+        if (prefix.isNullOrEmpty()) return null
+        if (prefix.startsWith("$") && !prefix.startsWith(marker)) return null
+        var rest = prefix.removePrefix(marker)
+        var rounds: Int? = null
+        if (rest.startsWith("rounds=")) {
+            val end = rest.indexOf('$')
+            if (end < 0) return null
+            rounds = rest.substring(7, end).toIntOrNull() ?: return null
+            rest = rest.substring(end + 1)
+        }
+        val salt = rest.substringBefore('$')
+        return if (salt.isEmpty()) null else salt to rounds
+    }
+
+    /**
+     * What a camera asked for in `extra_crypt`, for an error message: its type, passwd_id and which parameters it
+     * sent (names only; salts and keys are left out).
+     */
+    fun describeExtraCrypt(extraCrypt: JsonObject): String {
+        val type = (extraCrypt["type"] as? JsonPrimitive)?.content ?: "?"
+        val params = extraCrypt["params"] as? JsonObject
+        val id = (params?.get("passwd_id") as? JsonPrimitive)?.content
+        val names = params?.keys?.sorted()?.joinToString(",").orEmpty()
+        return buildString {
+            append(type.take(40))
+            if (id != null) append(" passwd_id=").append(id.take(10))
+            if (names.isNotEmpty()) append(" [").append(names.take(120)).append(']')
+        }
+    }
+
+    /** The PBKDF2 rounds the Tapo app assumes when pake_register doesn't name them (Spake2pRegisterResult). */
+    const val DEFAULT_ITERATIONS = 10_000
+
+    /** What a camera answered to pake_register, checked. */
+    class TpapRegistration(val salt: ByteArray, val deviceShare: ByteArray, val deviceRandom: ByteArray, val iterations: Int, val extraCrypt: JsonObject?)
+
+    /**
+     * Reads a pake_register result. Throws [UnsupportedTransform] naming the field when something TapoCtrl can't
+     * use is missing or out of range; nothing has been sent that depends on your password at that point.
+     */
+    fun tpapRegistration(result: JsonObject): TpapRegistration {
+        fun text(k: String) = (result[k] as? JsonPrimitive)?.takeIf { it !is kotlinx.serialization.json.JsonNull }?.content
+        fun bytes(k: String): ByteArray {
+            val v = text(k) ?: throw UnsupportedTransform("no $k (fields: ${result.keys.sorted().joinToString(",").take(160)})")
+            return try {
+                java.util.Base64.getDecoder().decode(v.trim())
+            } catch (e: IllegalArgumentException) {
+                throw UnsupportedTransform("$k isn't Base64")
+            }
+        }
+        val rawIterations = text("iterations")
+        val iterations = if (rawIterations == null) DEFAULT_ITERATIONS else rawIterations.trim().toIntOrNull()
+            ?.takeIf { it in 1..Spake2p.MAX_ITERATIONS } ?: throw UnsupportedTransform("iterations=${rawIterations.take(20)}")
+        val suite = text("cipher_suites")
+        if (suite != null && suite.trim() != "1") throw UnsupportedTransform("cipher_suites=${suite.take(20)}")
+        val encryption = text("encryption")
+        if (encryption != null && !encryption.equals("aes_128_ccm", ignoreCase = true)) throw UnsupportedTransform("encryption=${encryption.take(40)}")
+        val extra = result["extra_crypt"] as? JsonObject
+        return TpapRegistration(bytes("dev_salt"), bytes("dev_share"), bytes("dev_random"), iterations, extra)
     }
 }
 

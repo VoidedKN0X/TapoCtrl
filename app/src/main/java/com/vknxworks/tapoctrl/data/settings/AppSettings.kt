@@ -41,6 +41,8 @@ data class AppSettings(
     val lockTimeout: LockTimeout = LockTimeout.IMMEDIATELY,
     val hideScreenshots: Boolean = false,
     val hideRecents: Boolean = false,
+    /** The last range typed under "Scan a network range" (such as "192.168.1.0/24"); blank when none. */
+    val scanRange: String = "",
 ) {
     /** The tariff as a number, or null when it's blank or not a number. */
     val tariffPerKwh: Double? get() = tariff.replace(',', '.').toDoubleOrNull()?.takeIf { it >= 0 && it < 1000 }
@@ -54,6 +56,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val lockTimeout = stringPreferencesKey("lock_timeout")
         val hideScreenshots = booleanPreferencesKey("hide_screenshots")
         val hideRecents = booleanPreferencesKey("hide_recents")
+        val scanRange = stringPreferencesKey("scan_range")
     }
 
     private val prefs: Flow<Preferences> = context.appDataStore.data.catch { e ->
@@ -71,6 +74,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         lockTimeout = enumOr(this[K.lockTimeout], LockTimeout.IMMEDIATELY),
         hideScreenshots = this[K.hideScreenshots] ?: false,
         hideRecents = this[K.hideRecents] ?: false,
+        scanRange = (this[K.scanRange] ?: "").take(24),
     )
 
     /** Saves a change. If the phone's storage fails, the change is dropped instead of closing the app. */
@@ -84,6 +88,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 p[K.lockTimeout] = s.lockTimeout.name
                 p[K.hideScreenshots] = s.hideScreenshots
                 p[K.hideRecents] = s.hideRecents
+                p[K.scanRange] = s.scanRange.take(24)
             }
         } catch (e: IOException) {
             // Nothing to do: the settings stay as they were.

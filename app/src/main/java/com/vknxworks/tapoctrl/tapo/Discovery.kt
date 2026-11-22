@@ -1,13 +1,11 @@
 package com.vknxworks.tapoctrl.tapo
 
-import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import com.vknxworks.tapoctrl.net.LanAddress
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
@@ -40,30 +38,41 @@ data class Found(
     val encryption: String? = null,
     /** The login version older (securePassthrough) firmware announces ("lv"): 2 means it checks hashes only. */
     val loginVersion: Int? = null,
+    /** mgt_encrypt_schm.is_support_https: cameras answer true (they log in over HTTPS on port 443). */
+    val https: Boolean? = null,
 ) {
     val legacy: Boolean get() = encryption != null && !encryption.equals("KLAP", ignoreCase = true) && !camera
-    /** Tapo cameras (SMART.IPCAMERA): HTTPS on port 443 with their own certificate. */
+    /** Tapo cameras (device type SMART.IPCAMERA): HTTPS on port 443 with their own certificate. */
     val camera: Boolean get() = type?.contains("CAMERA", ignoreCase = true) == true
+
+    /** Two answers from the same address (UDP discovery and the KLAP probe) as one. */
+    fun mergedWith(o: Found): Found = Found(
+        ip, model ?: o.model, type ?: o.type, mac ?: o.mac, encryption ?: o.encryption, loginVersion ?: o.loginVersion, https ?: o.https,
+    )
 }
 
 /**
- * Finds Tapo devices on the phone's own /24 subnet, two ways, both local only:
- * 1. TP-Link's UDP discovery on port 20002 (broadcast on the subnet). The request carries a throwaway RSA public
- *    key generated on the phone for this scan; no TP-Link or cloud key is involved.
+ * Finds Tapo devices, two ways, both local only and both read-only (no device method is ever sent):
+ * 1. TP-Link's UDP discovery on port 20002: broadcast on the Wi-Fi subnet when there is one, and the same packet
+ *    to each address on its own (unicast), which also crosses a VPN such as Tailscale with a route to the network.
+ *    The request carries a throwaway RSA public key generated on the phone for this scan; no TP-Link or cloud key
+ *    is involved.
  * 2. A KLAP probe: POST /app/handshake1 to every address with a random 16-byte seed. Devices with current firmware
  *    answer with 48 bytes. Nothing about your account is sent.
+ * Android-free (the phone's own network is found in `net/LocalNetwork`), so it is unit-tested on the JVM.
  */
 object Discovery {
     const val PORT = 20002
 
-    /** This phone's IPv4 address on Wi-Fi or Ethernet, or null when it isn't on a local network. */
-    fun localAddress(context: Context): Inet4Address? {
-        val cm = context.getSystemService(ConnectivityManager::class.java) ?: return null
-        val net = cm.activeNetwork ?: return null
-        val caps = cm.getNetworkCapabilities(net) ?: return null
-        if (!caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) && !caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) return null
-        val props = cm.getLinkProperties(net) ?: return null
-        return props.linkAddresses.map { it.address }.filterIsInstance<Inet4Address>().firstOrNull { LanAddress.isPrivate(it) }
+    /** At most this many probes at once. */
+    const val CONCURRENCY = 48
+
+    /** How long to wait: short on the phone's own Wi-Fi, longer through a VPN. */
+    class Timing(val connectMs: Int, val readMs: Int, val listenMs: Long) {
+        companion object {
+            val WIFI = Timing(connectMs = 700, readMs = 1500, listenMs = 1500)
+            val RANGE = Timing(connectMs = 1500, readMs = 2500, listenMs = 2500)
+        }
     }
 
     /** The other 253 addresses of [self]'s /24, in order. */
@@ -74,19 +83,51 @@ object Discovery {
         }
     }
 
-    suspend fun scan(self: Inet4Address, onFound: (Found) -> Unit): List<Found> = coroutineScope {
+    /** The broadcast address of [self]'s /24. */
+    fun broadcastOf(self: Inet4Address): Inet4Address {
+        val b = self.address
+        return InetAddress.getByAddress(byteArrayOf(b[0], b[1], b[2], 255.toByte())) as Inet4Address
+    }
+
+    /** Scans the phone's own Wi-Fi /24, as before (broadcast and every address). */
+    suspend fun scan(self: Inet4Address, onProgress: (Int, Int) -> Unit = { _, _ -> }, onFound: (Found) -> Unit): List<Found> =
+        scan(subnet(self), broadcastOf(self), Timing.WIFI, onProgress, onFound)
+
+    /**
+     * Scans [targets] (private addresses only; anything else is skipped): unicast UDP discovery to each, a
+     * broadcast to [broadcast] when given, and the KLAP probe to each, at most [CONCURRENCY] at a time.
+     * [onProgress] gets (addresses probed, total). Cancelling the coroutine stops the scan; a probe already
+     * under way ends within its timeout.
+     */
+    suspend fun scan(
+        targets: List<Inet4Address>,
+        broadcast: Inet4Address?,
+        timing: Timing,
+        onProgress: (Int, Int) -> Unit = { _, _ -> },
+        onFound: (Found) -> Unit,
+    ): List<Found> = coroutineScope {
+        val list = targets.filter { LanAddress.isPrivate(it) }
         val found = java.util.concurrent.ConcurrentHashMap<String, Found>()
         fun add(f: Found) {
-            val merged = found.merge(f.ip, f) { a, b ->
-                Found(a.ip, a.model ?: b.model, a.type ?: b.type, a.mac ?: b.mac, a.encryption ?: b.encryption, a.loginVersion ?: b.loginVersion)
-            }
+            val merged = found.merge(f.ip, f) { a, b -> a.mergedWith(b) }
             if (merged != null) onFound(merged)
         }
-        val udp = async(Dispatchers.IO) { runCatching { udpDiscover(self) }.getOrDefault(emptyList()).forEach(::add) }
-        val gate = Semaphore(48)
-        subnet(self).map { ip ->
+        val udp = async(Dispatchers.IO) {
+            try {
+                udpDiscover(list, broadcast, timing.listenMs, ::add)
+            } catch (e: IOException) {
+                // No UDP (for example no route): the KLAP probe still runs.
+            }
+        }
+        val gate = Semaphore(CONCURRENCY)
+        val done = java.util.concurrent.atomic.AtomicInteger(0)
+        onProgress(0, list.size)
+        list.map { ip ->
             async(Dispatchers.IO) {
-                gate.withPermit { if (probeKlap(ip)) add(Found(LanAddress.text(ip), encryption = "KLAP")) }
+                gate.withPermit {
+                    if (probeKlap(ip, timing.connectMs, timing.readMs)) add(Found(LanAddress.text(ip), encryption = "KLAP"))
+                }
+                onProgress(done.incrementAndGet(), list.size)
             }
         }.awaitAll()
         udp.await()
@@ -96,9 +137,9 @@ object Discovery {
     fun ipSortKey(ip: String): Long = ip.split('.').fold(0L) { acc, p -> acc * 256 + (p.toLongOrNull() ?: 0) }
 
     /** True when [ip] answers KLAP handshake1 with 48 bytes. */
-    fun probeKlap(ip: Inet4Address): Boolean = try {
+    fun probeKlap(ip: Inet4Address, connectMs: Int = 700, readMs: Int = 1500): Boolean = try {
         val seed = ByteArray(16).also { SecureRandom().nextBytes(it) }
-        val r = LanHttp.post(ip, "/app/handshake1", seed, null, connectMs = 700, readMs = 1500)
+        val r = LanHttp.post(ip, "/app/handshake1", seed, null, connectMs = connectMs, readMs = readMs)
         r.code == 200 && r.body.size == 48
     } catch (e: IOException) {
         false
@@ -106,33 +147,54 @@ object Discovery {
         false
     }
 
-    private suspend fun udpDiscover(self: Inet4Address): List<Found> = withContext(Dispatchers.IO) {
-        val packet = discoveryPacket(throwawayPublicKeyPem(), SecureRandom().nextInt())
-        val b = self.address
-        val broadcast = InetAddress.getByAddress(byteArrayOf(b[0], b[1], b[2], 255.toByte()))
-        val out = mutableListOf<Found>()
-        DatagramSocket().use { socket ->
-            socket.broadcast = true
-            socket.soTimeout = 500
-            repeat(3) {
-                socket.send(DatagramPacket(packet, packet.size, broadcast, PORT))
-                val end = System.currentTimeMillis() + 1500
+    /**
+     * Sends the discovery packet to [broadcast] (if any) and to each of [targets], three rounds, and passes every
+     * answer from a private address to [onFound]. The same packet each time; it asks nothing of the device.
+     */
+    private suspend fun udpDiscover(targets: List<Inet4Address>, broadcast: Inet4Address?, listenMs: Long, onFound: (Found) -> Unit) =
+        withContext(Dispatchers.IO) {
+            val packet = discoveryPacket(throwawayPublicKeyPem(), SecureRandom().nextInt())
+            DatagramSocket().use { socket ->
+                socket.broadcast = broadcast != null
+                socket.soTimeout = 300
                 val buf = ByteArray(4096)
-                while (System.currentTimeMillis() < end) {
-                    val dp = DatagramPacket(buf, buf.size)
-                    try {
-                        socket.receive(dp)
-                    } catch (e: SocketTimeoutException) {
-                        continue
+                fun receiveUntil(end: Long) {
+                    while (System.currentTimeMillis() < end) {
+                        ensureActive()
+                        val dp = DatagramPacket(buf, buf.size)
+                        try {
+                            socket.receive(dp)
+                        } catch (e: SocketTimeoutException) {
+                            continue
+                        }
+                        val from = dp.address as? Inet4Address ?: continue
+                        if (!LanAddress.isPrivate(from)) continue
+                        parseDiscoveryReply(buf.copyOf(dp.length), LanAddress.text(from))?.let(onFound)
                     }
-                    val from = dp.address as? Inet4Address ?: continue
-                    if (!LanAddress.isPrivate(from)) continue
-                    parseDiscoveryReply(buf.copyOf(dp.length), LanAddress.text(from))?.let { out += it }
+                }
+                repeat(3) {
+                    ensureActive()
+                    if (broadcast != null) {
+                        try {
+                            socket.send(DatagramPacket(packet, packet.size, broadcast, PORT))
+                        } catch (e: IOException) {
+                            // A VPN may not take broadcasts; the unicast packets below still go.
+                        }
+                    }
+                    for ((i, ip) in targets.withIndex()) {
+                        ensureActive()
+                        try {
+                            socket.send(DatagramPacket(packet, packet.size, ip, PORT))
+                        } catch (e: IOException) {
+                            // That address can't be reached from here; try the next one.
+                        }
+                        // A short pause every 32 packets, then read what came back, so a tunnel isn't flooded.
+                        if (i % 32 == 31) receiveUntil(System.currentTimeMillis() + 20)
+                    }
+                    receiveUntil(System.currentTimeMillis() + listenMs)
                 }
             }
         }
-        out.distinctBy { it.ip }
-    }
 
     /** A fresh RSA public key in PEM form, used only to fill the discovery request; the private key is dropped. */
     private fun throwawayPublicKeyPem(): String {
@@ -174,6 +236,7 @@ object Discovery {
             mac = s(r, "mac"),
             encryption = s(r["mgt_encrypt_schm"] as? JsonObject, "encrypt_type"),
             loginVersion = ((r["mgt_encrypt_schm"] as? JsonObject)?.get("lv") as? JsonPrimitive)?.content?.toIntOrNull(),
+            https = ((r["mgt_encrypt_schm"] as? JsonObject)?.get("is_support_https") as? JsonPrimitive)?.content?.toBooleanStrictOrNull(),
         )
     }
 }

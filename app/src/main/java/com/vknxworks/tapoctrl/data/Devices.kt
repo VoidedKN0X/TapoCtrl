@@ -19,6 +19,7 @@ import com.vknxworks.tapoctrl.tapo.LedInfo
 import com.vknxworks.tapoctrl.tapo.LightPreset
 import com.vknxworks.tapoctrl.tapo.StripEffects
 import com.vknxworks.tapoctrl.tapo.DeviceReads
+import com.vknxworks.tapoctrl.tapo.Discovery
 import com.vknxworks.tapoctrl.tapo.TapoMethods
 import com.vknxworks.tapoctrl.tapo.DownloadState
 import com.vknxworks.tapoctrl.tapo.EnergyRange
@@ -111,6 +112,8 @@ sealed interface AddResult {
     data object AlreadyAdded : AddResult
     data object NotLocal : AddResult
     data object NoAnswer : AddResult
+    /** The scan said there's a camera at [ip], but nothing answered on HTTPS (port 443) there. */
+    data class CameraNoAnswer(val ip: String) : AddResult
     /**
      * A camera: its certificate's fingerprint, for you to confirm before anything is sent to it. Then
      * [DeviceRepository.addCamera].
@@ -340,13 +343,20 @@ class DeviceRepository(
         val addr = LanAddress.parse(ip) ?: return AddResult.NotLocal
         val text = LanAddress.text(addr)
         saved().firstOrNull { it.ip == text }?.let { return AddResult.AlreadyAdded }
-        if (hint?.camera == true) return cameraCertificate(text, hint) ?: AddResult.NoAnswer
+        if (hint?.camera == true) return cameraCertificate(text, hint) ?: AddResult.CameraNoAnswer(text)
         val c = client(text)!!
         val info = try {
             DeviceReads.info(c)
         } catch (e: TapoException.Unreachable) {
             // No plug or bulb there: a camera answers only on HTTPS.
             return if (hint == null) cameraCertificate(text, null) ?: AddResult.NoAnswer else AddResult.NoAnswer
+        } catch (e: TapoException.NoAccount) {
+            // No account yet, so nothing was sent. Typed by address: if it isn't a KLAP device (the probe sends
+            // only a random seed), it may be a camera; offer its certificate instead of adding it as a plug.
+            if (hint == null && !withContext(Dispatchers.IO) { Discovery.probeKlap(addr, connectMs = 1500, readMs = 2500) }) {
+                cameraCertificate(text, null)?.let { return it }
+            }
+            null
         } catch (e: TapoException) {
             null
         }

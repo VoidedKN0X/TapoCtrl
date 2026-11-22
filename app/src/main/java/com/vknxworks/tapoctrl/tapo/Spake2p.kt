@@ -147,9 +147,9 @@ internal object TpapCrypto {
      * SHA-256-crypt of [key] with [salt] (cut to 16 characters) and [rounds] (5000 when null; then the result has
      * no "rounds=" part). Returns the whole "$5$[rounds=N$]salt$hash" string.
      */
-    fun sha256Crypt(key: ByteArray, salt: String, rounds: Int?): String {
+    fun sha256Crypt(key: ByteArray, salt: String, rounds: Int?, explicitRounds: Boolean = false): String {
         val r = (rounds ?: 5000).coerceIn(1000, 999_999_999)
-        val explicit = rounds != null && rounds != 5000
+        val explicit = rounds != null && (rounds != 5000 || explicitRounds)
         val s = salt.take(16).toByteArray(Charsets.UTF_8)
         fun md() = MessageDigest.getInstance("SHA-256")
         fun repeat(digest: ByteArray, length: Int): ByteArray = ByteArray(length) { digest[it % 32] }
@@ -185,6 +185,50 @@ internal object TpapCrypto {
         to64((u(31) shl 8) or u(30), 3)
         val roundsPart = if (explicit) "rounds=$r$" else ""
         return "$5$" + roundsPart + String(s, Charsets.UTF_8) + "$" + enc
+    }
+
+    /**
+     * MD5-crypt ("$1$", the FreeBSD/glibc algorithm, as `openssl passwd -1`) of [key] with [salt] (cut to 8
+     * characters). Returns the whole "$1$salt$hash" string.
+     */
+    fun md5Crypt(key: ByteArray, salt: String): String {
+        val s = salt.take(8).toByteArray(Charsets.UTF_8)
+        val magic = "$1$".toByteArray(Charsets.US_ASCII)
+        fun md() = MessageDigest.getInstance("MD5")
+        val alt = md().run { update(key); update(s); update(key); digest() }
+        val ctx = md()
+        ctx.update(key); ctx.update(magic); ctx.update(s)
+        var pl = key.size
+        while (pl > 0) {
+            ctx.update(alt, 0, minOf(16, pl))
+            pl -= 16
+        }
+        var i = key.size
+        while (i > 0) {
+            if (i and 1 == 1) ctx.update(0.toByte()) else ctx.update(key[0])
+            i = i shr 1
+        }
+        var f = ctx.digest()
+        for (n in 0 until 1000) {
+            f = md().run {
+                if (n and 1 == 1) update(key) else update(f)
+                if (n % 3 != 0) update(s)
+                if (n % 7 != 0) update(key)
+                if (n and 1 == 1) update(f) else update(key)
+                digest()
+            }
+        }
+        fun u(k: Int) = f[k].toInt() and 0xFF
+        val enc = StringBuilder()
+        fun to64(value: Int, count: Int) {
+            var v = value
+            repeat(count) { enc.append(CRYPT_B64[v and 0x3F]); v = v shr 6 }
+        }
+        for (o in arrayOf(intArrayOf(0, 6, 12), intArrayOf(1, 7, 13), intArrayOf(2, 8, 14), intArrayOf(3, 9, 15), intArrayOf(4, 10, 5))) {
+            to64((u(o[0]) shl 16) or (u(o[1]) shl 8) or u(o[2]), 4)
+        }
+        to64(u(11), 2)
+        return "$1$" + String(s, Charsets.UTF_8) + "$" + enc
     }
 
     /** Reads "$5$[rounds=N$]salt$…" into (salt, rounds); null when it isn't such a prefix. */

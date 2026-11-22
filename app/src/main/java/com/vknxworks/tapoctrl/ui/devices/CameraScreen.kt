@@ -2,6 +2,7 @@ package com.vknxworks.tapoctrl.ui.devices
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -89,7 +90,8 @@ fun CameraScreen(id: String) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 24.dp)) {
             state?.error?.let { e ->
                 Column(Modifier.padding(horizontal = Gutter, vertical = 6.dp)) {
-                    WarningCard(errorMessage(context, e), Icons.Outlined.ErrorOutline)
+                    // Selectable, so the exact text (which login step failed) can be copied into a report.
+                    SelectionContainer { WarningCard(errorMessage(context, e), Icons.Outlined.ErrorOutline) }
                 }
                 if (e is TapoException.WrongAccount || e is TapoException.NoAccount || e is TapoException.AccountIncomplete) {
                     Group {

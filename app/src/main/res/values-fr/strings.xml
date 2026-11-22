@@ -30,7 +30,7 @@
 
     <!-- Errors -->
     <string name="err_not_local">Ce n\'est pas une adresse de votre réseau domestique. TapoCtrl se connecte uniquement à des adresses privées comme 192.168.x.x ou 10.x.x.x.</string>
-    <string name="err_unreachable">Pas de réponse. L\'appareil est-il branché et sur le même Wi-Fi que ce téléphone ?</string>
+    <string name="err_unreachable">Pas de réponse. L\'appareil est-il allumé, et ce téléphone est-il sur son réseau (à la maison, ou via un VPN comme Tailscale avec une route vers celui-ci) ?</string>
     <string name="err_wrong_account">Cet appareil n\'accepte pas votre compte Tapo ; vérifiez l\'adresse e-mail et le mot de passe sous Compte Tapo.</string>
     <string name="err_no_account">Saisissez d\'abord votre compte Tapo pour que TapoCtrl puisse communiquer avec cet appareil.</string>
     <string name="err_legacy">TapoCtrl n\'a pas pu communiquer avec l\'ancien firmware de cet appareil. Mettre à jour son firmware avec l\'app Tapo peut aider.</string>
@@ -44,13 +44,13 @@
     <string name="added_short">Ajouté</string>
     <string name="add_already">Cet appareil est déjà dans votre liste.</string>
     <string name="add_no_answer">Aucune réponse à %1$s. Vérifiez l\'adresse et que l\'appareil est allumé.</string>
-    <string name="add_ip_hint">Vous trouverez l\'adresse dans la liste des appareils connectés de votre routeur. En y attribuant une adresse fixe à l\'appareil, elle ne changera plus.</string>
+    <string name="add_ip_hint">Vous trouverez l\'adresse dans la liste des appareils connectés de votre routeur. En y attribuant une adresse fixe à l\'appareil, elle ne changera plus. L\'ajout par adresse fonctionne aussi via un VPN comme Tailscale s\'il a une route vers votre réseau domestique.</string>
     <string name="scan_title">Analyser le réseau</string>
     <string name="scan_network">Analyser le réseau</string>
     <string name="scanning">Analyse…</string>
     <string name="scan_subnet">Analyse %1$s</string>
-    <string name="scan_no_wifi">Connectez ce téléphone à votre Wi-Fi pour lancer l\'analyse.</string>
-    <string name="scan_footer">L\'analyse demande à chaque adresse du sous-réseau Wi-Fi de ce téléphone s\'il s\'agit d\'un appareil Tapo, et envoie la diffusion de découverte locale de TP-Link. Rien sur votre compte n\'est envoyé et rien ne quitte votre réseau.</string>
+    <string name="scan_no_wifi">Pas en Wi-Fi. Touchez pour analyser plutôt une plage réseau.</string>
+    <string name="scan_footer">Analyser le réseau demande à chaque adresse du sous-réseau Wi-Fi de ce téléphone s\'il s\'agit d\'un appareil Tapo, même quand un VPN comme Tailscale est actif, et envoie le paquet de découverte locale de TP-Link (en diffusion et à chaque adresse). Une plage réseau est interrogée adresse par adresse de la même façon. L\'analyse ne fait que lire : rien sur votre compte n\'est envoyé et aucun appareil n\'est modifié.</string>
     <string name="scan_none">Aucun appareil Tapo trouvé</string>
     <string name="scan_none_sub">Les appareils sur un autre réseau ou un Wi-Fi invité sont introuvables d\'ici</string>
     <string name="found_device">Appareil Tapo</string>
@@ -351,7 +351,7 @@
     <string name="err_locked_for">La caméra refuse les connexions pendant environ %1$d min après trop d\'échecs. Réessayez plus tard.</string>
     <string name="err_locked">La caméra refuse les connexions pendant un moment après trop d\'échecs. Réessayez plus tard.</string>
     <string name="err_certificate">TapoCtrl ne fait pas confiance au certificat de cette caméra : ce n\'est pas celui que vous avez confirmé, ou aucun n\'a été confirmé sur ce téléphone. Rien n\'a été envoyé. Retirez la caméra et ajoutez-la à nouveau pour vérifier son certificat.</string>
-    <string name="err_unsupported">Cette caméra demande une connexion que TapoCtrl ne prend pas encore en charge (%1$s). Rien d\'autre n\'a été envoyé.</string>
+    <string name="err_unsupported">Cette caméra demande une connexion que TapoCtrl ne sait pas encore faire. Rien de dérivé de votre mot de passe n\'a été envoyé. Détails : %1$s</string>
     <string name="status_certificate">Vérifier le certificat</string>
     <string name="status_privacy_on">Confidentialité activée</string>
     <string name="status_camera_on">Caméra active</string>
@@ -387,4 +387,19 @@
     <string name="cert_body">La caméra à l\'adresse %1$s a créé son propre certificat HTTPS, aucune autorité ne s\'en porte donc garante. Son empreinte SHA-256 est :</string>
     <string name="cert_note">Ne confirmez que sur votre propre réseau domestique. TapoCtrl ne fera ensuite confiance qu\'à ce certificat précis pour cette caméra, et s\'arrêtera avec un avertissement s\'il change un jour.</string>
     <string name="cert_trust">Faire confiance et ajouter</string>
+    <!-- 0.7: scanning through a VPN, camera login details -->
+    <string name="err_device_step">La caméra a refusé la connexion (erreur %1$d à l\'étape %2$s).</string>
+    <string name="add_camera_no_answer">L\'analyse a trouvé une caméra à %1$s, mais elle n\'a pas répondu en HTTPS (port 443). Vérifiez qu\'elle est allumée et que ce téléphone peut la joindre.</string>
+    <string name="scan_range">Analyser une plage réseau</string>
+    <string name="scan_range_sub">Dernière plage : %1$s</string>
+    <string name="scan_range_sub_none">Pour un réseau joint via un VPN, comme 192.168.1.0/24</string>
+    <string name="scan_range_body">Saisissez le réseau de vos appareils Tapo, par exemple 192.168.1.0/24 (au plus un /22, 1022 adresses ; plages privées uniquement). Hors de chez vous, cela ne fonctionne que via un VPN avec une route vers ce réseau, comme une route de sous-réseau Tailscale. La diffusion de découverte de TP-Link ne traverse pas un VPN : TapoCtrl interroge donc chaque adresse séparément, ce qui prend un peu plus de temps.</string>
+    <string name="scan_range_label">Plage réseau</string>
+    <string name="scan_range_invalid">Saisissez une plage au format adresse/préfixe, par exemple 192.168.1.0/24.</string>
+    <string name="scan_range_too_large">Cette plage est trop grande : au plus un /22 (1022 adresses), par exemple 192.168.0.0/22.</string>
+    <string name="scan_range_not_private">Plages privées uniquement : 10.x.x.x, 172.16–31.x.x, 192.168.x.x ou 100.64–127.x.x.</string>
+    <string name="scan_range_count">%1$d adresses</string>
+    <string name="scan_start">Analyser</string>
+    <string name="scan_progress">%1$d adresses interrogées sur %2$d</string>
+    <string name="scan_stop">Arrêter</string>
 </resources>

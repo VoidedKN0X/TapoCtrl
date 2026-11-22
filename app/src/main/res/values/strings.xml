@@ -28,7 +28,7 @@
 
     <!-- Errors -->
     <string name="err_not_local">That isn\'t an address on your home network. TapoCtrl only connects to private addresses such as 192.168.x.x or 10.x.x.x.</string>
-    <string name="err_unreachable">No answer. Is the device plugged in and on the same Wi-Fi as this phone?</string>
+    <string name="err_unreachable">No answer. Is the device on, and is this phone on its network (at home, or through a VPN such as Tailscale with a route to it)?</string>
     <string name="err_wrong_account">This device doesn\'t accept your Tapo account; check the email and password under Tapo account.</string>
     <string name="err_no_account">Enter your Tapo account first, so TapoCtrl can talk to this device.</string>
     <string name="err_legacy">TapoCtrl couldn\'t talk to this device\'s older firmware. Updating its firmware with the Tapo app may help.</string>
@@ -42,13 +42,13 @@
     <string name="added_short">Added</string>
     <string name="add_already">This device is already in your list.</string>
     <string name="add_no_answer">Nothing answered at %1$s. Check the address and that the device is on.</string>
-    <string name="add_ip_hint">You\'ll find the address in your router\'s list of connected devices. Giving the device a fixed address there keeps it the same.</string>
+    <string name="add_ip_hint">You\'ll find the address in your router\'s list of connected devices. Giving the device a fixed address there keeps it the same. Adding by address also works through a VPN such as Tailscale when it has a route to your home network.</string>
     <string name="scan_title">Scan network</string>
     <string name="scan_network">Scan network</string>
     <string name="scanning">Scanning…</string>
     <string name="scan_subnet">Looks at %1$s</string>
-    <string name="scan_no_wifi">Connect this phone to your Wi-Fi to scan.</string>
-    <string name="scan_footer">The scan asks every address on this phone\'s Wi-Fi subnet whether it\'s a Tapo device, and sends TP-Link\'s local discovery broadcast. Nothing about your account is sent and nothing leaves your network.</string>
+    <string name="scan_no_wifi">Not on Wi-Fi. Tap to scan a network range instead.</string>
+    <string name="scan_footer">Scan network asks every address on this phone\'s Wi-Fi subnet whether it\'s a Tapo device, also while a VPN such as Tailscale is on, and sends TP-Link\'s local discovery packet (as a broadcast and to each address). A network range is asked address by address the same way. Scanning only reads: nothing about your account is sent and no device is changed.</string>
     <string name="scan_none">No Tapo devices found</string>
     <string name="scan_none_sub">Devices on another network or a guest Wi-Fi can\'t be found from here</string>
     <string name="found_device">Tapo device</string>
@@ -278,7 +278,7 @@
     <string name="err_locked_for">The camera refuses logins for about %1$d min after too many wrong ones. Try again later.</string>
     <string name="err_locked">The camera refuses logins for a while after too many wrong ones. Try again later.</string>
     <string name="err_certificate">TapoCtrl doesn\'t trust this camera\'s certificate: it isn\'t the one you confirmed, or none was confirmed on this phone. Nothing was sent. Remove the camera and add it again to check its certificate.</string>
-    <string name="err_unsupported">This camera asks for a login TapoCtrl doesn\'t support yet (%1$s). Nothing more was sent.</string>
+    <string name="err_unsupported">This camera asks for a login TapoCtrl can\'t do yet. Nothing derived from your password was sent. Details: %1$s</string>
     <string name="status_certificate">Check certificate</string>
     <string name="status_privacy_on">Privacy on</string>
     <string name="status_camera_on">Camera on</string>
@@ -314,4 +314,19 @@
     <string name="cert_body">The camera at %1$s made its own HTTPS certificate, so no authority vouches for it. Its SHA-256 fingerprint is:</string>
     <string name="cert_note">Confirm only on your own home network. TapoCtrl then trusts only this exact certificate for this camera, and stops with a warning if it ever changes.</string>
     <string name="cert_trust">Trust and add</string>
+    <!-- 0.7: scanning through a VPN, camera login details -->
+    <string name="err_device_step">The camera refused the login (error %1$d at %2$s).</string>
+    <string name="add_camera_no_answer">The scan found a camera at %1$s, but it didn\'t answer on HTTPS (port 443). Check that it\'s on and that this phone can reach it.</string>
+    <string name="scan_range">Scan a network range</string>
+    <string name="scan_range_sub">Last range: %1$s</string>
+    <string name="scan_range_sub_none">For a network you reach through a VPN, such as 192.168.1.0/24</string>
+    <string name="scan_range_body">Type the network your Tapo devices are on, such as 192.168.1.0/24 (at most a /22, 1022 addresses; private ranges only). Away from home this works only through a VPN with a route to that network, such as a Tailscale subnet route. TP-Link\'s discovery broadcast doesn\'t cross a VPN, so TapoCtrl asks each address on its own; that takes a little longer.</string>
+    <string name="scan_range_label">Network range</string>
+    <string name="scan_range_invalid">Type a range as address/prefix, such as 192.168.1.0/24.</string>
+    <string name="scan_range_too_large">That range is too large: at most a /22 (1022 addresses), such as 192.168.0.0/22.</string>
+    <string name="scan_range_not_private">Only private ranges: 10.x.x.x, 172.16–31.x.x, 192.168.x.x or 100.64–127.x.x.</string>
+    <string name="scan_range_count">%1$d addresses</string>
+    <string name="scan_start">Scan</string>
+    <string name="scan_progress">%1$d of %2$d addresses asked</string>
+    <string name="scan_stop">Stop</string>
 </resources>

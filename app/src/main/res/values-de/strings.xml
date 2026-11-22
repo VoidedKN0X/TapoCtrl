@@ -30,7 +30,7 @@
 
     <!-- Errors -->
     <string name="err_not_local">Das ist keine Adresse in deinem Heimnetz. TapoCtrl verbindet sich nur mit privaten Adressen wie 192.168.x.x oder 10.x.x.x.</string>
-    <string name="err_unreachable">Keine Antwort. Ist das Gerät eingesteckt und im selben WLAN wie dieses Smartphone?</string>
+    <string name="err_unreachable">Keine Antwort. Ist das Gerät an, und ist dieses Smartphone in seinem Netzwerk (zu Hause oder über ein VPN wie Tailscale mit einer Route dorthin)?</string>
     <string name="err_wrong_account">Dieses Gerät akzeptiert dein Tapo-Konto nicht; prüfe E-Mail und Passwort unter Tapo-Konto.</string>
     <string name="err_no_account">Gib zuerst dein Tapo-Konto ein, damit TapoCtrl mit diesem Gerät sprechen kann.</string>
     <string name="err_legacy">TapoCtrl konnte nicht mit der älteren Firmware dieses Geräts sprechen. Ein Firmware-Update mit der Tapo-App kann helfen.</string>
@@ -44,13 +44,13 @@
     <string name="added_short">Hinzugefügt</string>
     <string name="add_already">Dieses Gerät ist schon in deiner Liste.</string>
     <string name="add_no_answer">Keine Antwort unter %1$s. Prüfe die Adresse und ob das Gerät eingeschaltet ist.</string>
-    <string name="add_ip_hint">Die Adresse findest du in der Liste der verbundenen Geräte deines Routers. Gibst du dem Gerät dort eine feste Adresse, bleibt sie gleich.</string>
+    <string name="add_ip_hint">Die Adresse findest du in der Liste der verbundenen Geräte deines Routers. Gibst du dem Gerät dort eine feste Adresse, bleibt sie gleich. Das Hinzufügen per Adresse klappt auch über ein VPN wie Tailscale, wenn es eine Route in dein Heimnetz hat.</string>
     <string name="scan_title">Netzwerk durchsuchen</string>
     <string name="scan_network">Netzwerk durchsuchen</string>
     <string name="scanning">Suche läuft…</string>
     <string name="scan_subnet">Durchsucht %1$s</string>
-    <string name="scan_no_wifi">Verbinde dieses Smartphone mit deinem WLAN, um zu suchen.</string>
-    <string name="scan_footer">Die Suche fragt jede Adresse im WLAN-Subnetz dieses Smartphones, ob sie ein Tapo-Gerät ist, und sendet den lokalen Discovery-Broadcast von TP-Link. Nichts über dein Konto wird gesendet und nichts verlässt dein Netzwerk.</string>
+    <string name="scan_no_wifi">Nicht im WLAN. Tippe, um stattdessen einen Netzwerkbereich zu durchsuchen.</string>
+    <string name="scan_footer">Netzwerk durchsuchen fragt jede Adresse im WLAN-Subnetz dieses Smartphones, ob sie ein Tapo-Gerät ist, auch wenn ein VPN wie Tailscale an ist, und sendet das lokale Discovery-Paket von TP-Link (als Broadcast und an jede Adresse). Ein Netzwerkbereich wird genauso Adresse für Adresse gefragt. Die Suche liest nur: Nichts über dein Konto wird gesendet und kein Gerät wird geändert.</string>
     <string name="scan_none">Keine Tapo-Geräte gefunden</string>
     <string name="scan_none_sub">Geräte in einem anderen Netzwerk oder Gast-WLAN können von hier aus nicht gefunden werden</string>
     <string name="found_device">Tapo-Gerät</string>
@@ -351,7 +351,7 @@
     <string name="err_locked_for">Die Kamera lehnt nach zu vielen Fehlversuchen etwa %1$d Min. lang Anmeldungen ab. Versuche es später noch einmal.</string>
     <string name="err_locked">Die Kamera lehnt nach zu vielen Fehlversuchen eine Weile Anmeldungen ab. Versuche es später noch einmal.</string>
     <string name="err_certificate">TapoCtrl vertraut dem Zertifikat dieser Kamera nicht: Es ist nicht das, das du bestätigt hast, oder auf diesem Smartphone wurde keines bestätigt. Es wurde nichts gesendet. Entferne die Kamera und füge sie erneut hinzu, um ihr Zertifikat zu prüfen.</string>
-    <string name="err_unsupported">Diese Kamera verlangt eine Anmeldung, die TapoCtrl noch nicht unterstützt (%1$s). Es wurde nichts weiter gesendet.</string>
+    <string name="err_unsupported">Diese Kamera verlangt eine Anmeldung, die TapoCtrl noch nicht kann. Es wurde nichts gesendet, das von deinem Passwort abgeleitet ist. Details: %1$s</string>
     <string name="status_certificate">Zertifikat prüfen</string>
     <string name="status_privacy_on">Privatsphäre an</string>
     <string name="status_camera_on">Kamera an</string>
@@ -387,4 +387,19 @@
     <string name="cert_body">Die Kamera unter %1$s hat ihr eigenes HTTPS-Zertifikat erstellt, keine Stelle bürgt also dafür. Sein SHA-256-Fingerabdruck ist:</string>
     <string name="cert_note">Bestätige nur in deinem eigenen Heimnetz. TapoCtrl vertraut dann nur genau diesem Zertifikat für diese Kamera und stoppt mit einer Warnung, falls es sich je ändert.</string>
     <string name="cert_trust">Vertrauen und hinzufügen</string>
+    <!-- 0.7: scanning through a VPN, camera login details -->
+    <string name="err_device_step">Die Kamera hat die Anmeldung abgelehnt (Fehler %1$d bei %2$s).</string>
+    <string name="add_camera_no_answer">Die Suche hat unter %1$s eine Kamera gefunden, aber sie hat nicht über HTTPS (Port 443) geantwortet. Prüfe, ob sie an ist und dieses Smartphone sie erreicht.</string>
+    <string name="scan_range">Netzwerkbereich durchsuchen</string>
+    <string name="scan_range_sub">Letzter Bereich: %1$s</string>
+    <string name="scan_range_sub_none">Für ein Netzwerk, das du über ein VPN erreichst, etwa 192.168.1.0/24</string>
+    <string name="scan_range_body">Gib das Netzwerk deiner Tapo-Geräte ein, etwa 192.168.1.0/24 (höchstens ein /22, 1022 Adressen; nur private Bereiche). Unterwegs klappt das nur über ein VPN mit einer Route in dieses Netzwerk, etwa eine Tailscale-Subnetzroute. Der Discovery-Broadcast von TP-Link geht nicht durch ein VPN, darum fragt TapoCtrl jede Adresse einzeln; das dauert etwas länger.</string>
+    <string name="scan_range_label">Netzwerkbereich</string>
+    <string name="scan_range_invalid">Gib einen Bereich als Adresse/Präfix ein, etwa 192.168.1.0/24.</string>
+    <string name="scan_range_too_large">Dieser Bereich ist zu groß: höchstens ein /22 (1022 Adressen), etwa 192.168.0.0/22.</string>
+    <string name="scan_range_not_private">Nur private Bereiche: 10.x.x.x, 172.16–31.x.x, 192.168.x.x oder 100.64–127.x.x.</string>
+    <string name="scan_range_count">%1$d Adressen</string>
+    <string name="scan_start">Durchsuchen</string>
+    <string name="scan_progress">%1$d von %2$d Adressen gefragt</string>
+    <string name="scan_stop">Stoppen</string>
 </resources>

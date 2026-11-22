@@ -58,7 +58,7 @@ fun errorMessage(context: Context, e: TapoException): String = when (e) {
     is TapoException.WrongAccount -> context.getString(R.string.err_wrong_account)
     is TapoException.NoAccount -> context.getString(R.string.err_no_account)
     is TapoException.LegacyFirmware -> context.getString(R.string.err_legacy)
-    is TapoException.DeviceError -> context.getString(R.string.err_device, e.code)
+    is TapoException.DeviceError -> e.step?.let { context.getString(R.string.err_device_step, e.code, it) } ?: context.getString(R.string.err_device, e.code)
     is TapoException.AccountIncomplete -> context.getString(R.string.err_account_incomplete)
     is TapoException.NeedsPassword -> context.getString(R.string.err_needs_password)
     is TapoException.Locked -> e.seconds?.let { context.getString(R.string.err_locked_for, (it + 59) / 60) } ?: context.getString(R.string.err_locked)
