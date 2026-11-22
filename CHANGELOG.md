@@ -4,6 +4,29 @@ What changed in each TapoCtrl release. Every release on the [Releases page](http
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+Built and checked by CI only: nothing here has been run on a phone or a Tapo device yet.
+
+### Security
+
+- **A plug or bulb that speaks KLAP is never switched to the older protocol.** Before, whenever a device's first handshake step didn't look like KLAP, TapoCtrl quietly switched that device to the older securePassthrough protocol and logged in with it. That older protocol doesn't prove which device is answering, and its login sends values made from your Tapo account (with "Keep the password for older firmware" on, even the password itself). So anything on your network that took over a plug's address could collect them. Now TapoCtrl remembers, per device, which protocol it answered with. A device that has answered with KLAP is never switched: you see "Protocol changed" on its tile and an explanation on its page, and nothing is sent. Devices that really have older firmware, and new devices, work as before. Devices in your list are remembered the first time they answer after this update. If you really put older firmware on a device, remove it and add it again. Needs a test with a KLAP plug and, if you have one, an older-firmware device.
+- **A scan can't move a plug to another address just by claiming its MAC address.** The MAC address in a scan answer is whatever the sender says, so any device on the network could make TapoCtrl move one of your plugs or bulbs to its own address. Now a plug or bulb is only moved after a quick read at the new address over KLAP, which only works with your account, returns the same MAC address. If that check fails (or the device only has older firmware), the device keeps its saved address and is simply listed as found. Cameras are moved as before; at the new address only the certificate you confirmed is trusted. The end of a scan can take a few seconds longer when a device really moved.
+- **A camera can't keep your phone busy with an absurd login.** A camera's login can ask for a number of hashing rounds; TapoCtrl accepted up to almost a billion, which would keep a processor core busy for a long time with no way to stop it. More than one million rounds (the C200 asks for 5,000) now stops the login with a "doesn't support yet" message.
+- **"Forgot PIN?" now asks for your phone's screen lock first.** Before, anyone holding your unlocked phone could tap "Forgot PIN?" on TapoCtrl's lock screen and reset it. Now the reset first asks for your phone's own PIN, pattern, password or fingerprint. If you cancel or it fails, nothing is reset. If your phone has no screen lock at all, the reset works as before.
+
+### Fixed
+
+- **A plug's page stops reading the power in the background.** With a plug's page open, TapoCtrl kept asking the plug for its power reading every 15 seconds also after you left the app, until Android closed it. It now stops when TapoCtrl is in the background and reads the power again as soon as you come back.
+
+### Changed
+
+- **Settings files remember which devices speak KLAP.** An exported settings file now marks devices that have answered with KLAP, and importing it keeps that mark for the devices it adds (a file can only make a device stricter; it can never mark a device as older firmware). Older settings files still import as before.
+
+### Project
+
+- CI now runs the unit tests on every build (`:app:testDebugUnitTest`). New tests cover the KLAP pinning rules, the round limit and the settings file mark.
+
 ## v0.7.0 (2026-11-22)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.

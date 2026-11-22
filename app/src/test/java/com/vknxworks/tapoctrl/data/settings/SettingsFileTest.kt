@@ -32,4 +32,22 @@ class SettingsFileTest {
         assertEquals("192.168.1.10", m.list[0].ip)
         assertEquals("192.168.1.11", m.list[1].ip)
     }
+
+    @Test fun onlyTheKlapPinIsImported() {
+        val f = SettingsFileContent(devices = listOf(
+            FileDevice("192.168.1.20", protocol = "klap"),
+            FileDevice("192.168.1.21", protocol = "passthrough"),
+            FileDevice("192.168.1.22", protocol = "anything"),
+        ))
+        var n = 0
+        val m = SettingsFile.merge(f, emptyList()) { "new${n++}" }
+        assertEquals(listOf("klap", "", ""), m.list.map { it.protocol })
+    }
+
+    @Test fun anExistingDeviceKeepsItsPin() {
+        val cur = listOf(SavedDevice("1", "192.168.1.10", "Plug", protocol = "klap"))
+        val f = SettingsFileContent(devices = listOf(FileDevice("192.168.1.10", room = "Hall", protocol = "")))
+        val m = SettingsFile.merge(f, cur) { "x" }
+        assertEquals("klap", m.list.single().protocol)
+    }
 }

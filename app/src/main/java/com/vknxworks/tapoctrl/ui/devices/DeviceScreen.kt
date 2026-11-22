@@ -39,7 +39,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.vknxworks.tapoctrl.R
 import com.vknxworks.tapoctrl.container
 import com.vknxworks.tapoctrl.data.DeviceState
@@ -106,15 +109,19 @@ fun DeviceScreen(id: String) {
     var renaming by remember { mutableStateOf(false) }
     var removing by remember { mutableStateOf(false) }
 
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(id) {
         c.devices.refresh(id)
         // The status light, auto-off and time-on: reads only.
         c.devices.refreshSettings(id)
-        // Plugs: keep the power reading fresh while this page is open.
-        while (isActive) {
-            val s = c.devices.states.value[id]
-            if (s?.info?.isPlug == true && s.energySupported != false) c.devices.refreshEnergy(id) else if (s?.info != null) break
-            delay(15_000)
+        // Plugs: keep the power reading fresh while this page is open and on screen. In the background the loop
+        // stops (no radio wake-ups every 15 s); coming back reads the power again at once.
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (isActive) {
+                val s = c.devices.states.value[id]
+                if (s?.info?.isPlug == true && s.energySupported != false) c.devices.refreshEnergy(id) else if (s?.info != null) break
+                delay(15_000)
+            }
         }
     }
 

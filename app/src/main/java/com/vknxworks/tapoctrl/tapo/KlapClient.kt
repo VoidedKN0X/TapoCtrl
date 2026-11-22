@@ -43,6 +43,11 @@ sealed class TapoException(message: String, cause: Throwable? = null) : Exceptio
     class NeedsPassword : TapoException("Needs the password")
     /** A camera refuses logins for a while after too many wrong ones. */
     class Locked(val seconds: Int?) : TapoException("Locked")
+    /**
+     * A plug or bulb that spoke KLAP before now answers like older firmware (no KLAP). TapoCtrl doesn't switch it to
+     * securePassthrough, which would send account values to whatever answers at that address. Nothing was sent.
+     */
+    class ProtocolChanged : TapoException("Protocol changed")
     /** The camera's certificate isn't the one you confirmed when you added it. Nothing was sent. */
     class CertificateChanged : TapoException("Certificate changed")
     /**

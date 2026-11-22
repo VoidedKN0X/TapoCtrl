@@ -30,6 +30,8 @@ import com.vknxworks.tapoctrl.net.PinnedTls
 import com.vknxworks.tapoctrl.tapo.Camera
 import com.vknxworks.tapoctrl.tapo.CameraClient
 import com.vknxworks.tapoctrl.tapo.CameraStatus
+import com.vknxworks.tapoctrl.tapo.KlapClient
+import com.vknxworks.tapoctrl.tapo.SavedProtocol
 import com.vknxworks.tapoctrl.tapo.SmartClient
 import com.vknxworks.tapoctrl.tapo.TapoException
 import kotlinx.coroutines.CoroutineScope
@@ -77,6 +79,12 @@ data class SavedDevice(
     val certSha256: String = "",
     /** Older (securePassthrough) firmware: the login version the device announced in a scan (2: hashes only); 0 when unknown. */
     val loginVersion: Int = 0,
+    /**
+     * Plugs and bulbs: the protocol the device has answered with ([SavedProtocol]: "klap", "passthrough", or empty
+     * when not known yet, as in lists from before 0.7.1). A device saved as KLAP is never switched to
+     * securePassthrough ([SmartClient]).
+     */
+    val protocol: String = SavedProtocol.UNKNOWN,
 ) {
     /** A Tapo camera (SMART.IPCAMERA): HTTPS with its own certificate, and its own requests. */
     val isCamera: Boolean get() = type.contains("CAMERA", ignoreCase = true)
@@ -284,7 +292,12 @@ class DeviceRepository(
         val addr = LanAddress.parse(ip) ?: return null
         synchronized(clients) {
             return clients.getOrPut(ip) {
-                SmartClient(addr, { account.hashes() }, { account.parts() }) {
+                SmartClient(
+                    addr,
+                    { account.hashes() },
+                    { account.parts() },
+                    savedProtocol = { devices.value.firstOrNull { it.ip == ip && !it.isCamera }?.protocol },
+                ) {
                     devices.value.firstOrNull { it.ip == ip }?.loginVersion?.takeIf { it > 0 }
                 }
             }
@@ -375,6 +388,7 @@ class DeviceRepository(
             type = info?.type ?: hint?.type.orEmpty(),
             mac = info?.mac ?: hint?.mac.orEmpty(),
             loginVersion = hint?.loginVersion ?: 0,
+            protocol = if (info != null) c.protocol ?: SavedProtocol.UNKNOWN else SavedProtocol.UNKNOWN,
         )
         save { it + d }
         setState(d.id) { DeviceState(info = info, updatedAt = if (info != null) System.currentTimeMillis() else 0) }
@@ -464,6 +478,11 @@ class DeviceRepository(
                 } catch (e: TapoException.DeviceError) {
                     setState(id) { it.copy(children = emptyList()) }
                 }
+            }
+            // Remember which protocol it answered with, so a device that speaks KLAP is never downgraded later.
+            val proto = c.protocol
+            if (proto != null && SavedProtocol.mayRecord(d.protocol, proto)) {
+                save { list -> list.map { if (it.id == id) it.copy(protocol = proto) else it } }
             }
             // Keep the saved name, model and MAC in step with the device.
             if (info.nickname != d.name || info.model != d.model || (info.mac ?: "") != d.mac || info.type != d.type) {
@@ -764,13 +783,30 @@ class DeviceRepository(
         }
     }
 
-    /** Moves known devices whose MAC turned up at a new address during a scan. */
+    /**
+     * Moves known devices whose MAC turned up at a new address during a scan. The MAC in a scan answer is whatever
+     * the sender says, so a plug or bulb is only moved after a KLAP read at the new address (which proves the
+     * device knows your account) returns the same MAC. A device that can't be checked that way (older firmware,
+     * no answer, another MAC) keeps its saved address and is just listed as found. Cameras move as before: at the
+     * new address only the certificate you confirmed is trusted.
+     */
     suspend fun updateAddresses(found: List<Found>) {
         val byMac = found.filter { !it.mac.isNullOrEmpty() }.associateBy { normMac(it.mac!!) }
         if (byMac.isEmpty()) return
+        val candidates = saved().mapNotNull { d ->
+            val f = if (d.mac.isNotEmpty()) byMac[normMac(d.mac)] else null
+            if (f == null || f.ip == d.ip) null else d to f
+        }
+        if (candidates.isEmpty()) return
+        val moves = coroutineScope {
+            candidates.map { (d, f) ->
+                async { if (d.isCamera || provenAt(f.ip, d.mac)) d.id to f else null }
+            }.awaitAll().filterNotNull().toMap()
+        }
+        if (moves.isEmpty()) return
         save { list ->
             list.map { d ->
-                val f = if (d.mac.isNotEmpty()) byMac[normMac(d.mac)] else null
+                val f = moves[d.id]
                 when {
                     f == null -> d
                     // A camera keeps its confirmed certificate: at the new address only that one is trusted.
@@ -778,6 +814,19 @@ class DeviceRepository(
                     else -> d.copy(ip = f.ip, loginVersion = f.loginVersion ?: d.loginVersion)
                 }
             }
+        }
+    }
+
+    /** A KLAP get_device_info at [ip] (only reads; never securePassthrough) answers with [mac]. */
+    private suspend fun provenAt(ip: String, mac: String): Boolean {
+        val addr = LanAddress.parse(ip) ?: return false
+        return try {
+            val info = DeviceReads.info(KlapClient(addr) { account.hashes() })
+            info.mac?.let { normMac(it) == normMac(mac) } == true
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            false
         }
     }
 

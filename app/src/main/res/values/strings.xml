@@ -5,7 +5,10 @@
     <string name="app_lock_subtitle">Ask for an app PIN (and optionally your fingerprint) when opening TapoCtrl.</string>
     <string name="app_lock_footer">TapoCtrl only talks to devices on your home network. It never contacts TP-Link or any other server, and has no analytics or tracking.</string>
     <string name="lock_prompt_subtitle">Your devices</string>
-    <string name="lock_forgot_body">The PIN can\'t be recovered. TapoCtrl will forget your Tapo account hashes and your device list, reset its settings and turn the app lock off. Your plugs and bulbs themselves aren\'t changed.</string>
+    <string name="lock_forgot_body">The PIN can\'t be recovered. TapoCtrl will forget your Tapo account hashes and your device list, reset its settings and turn the app lock off. Your plugs and bulbs themselves aren\'t changed. If your phone has a screen lock, you\'ll confirm with it first.</string>
+    <string name="lock_reset_prompt_title">Reset TapoCtrl\'s app lock</string>
+    <string name="lock_reset_prompt_subtitle">Use your phone\'s screen lock to confirm it\'s you</string>
+    <string name="lock_reset_prompt_failed">Couldn\'t show the screen lock prompt</string>
 
     <!-- Home -->
     <string name="home_title">Devices</string>
@@ -280,6 +283,8 @@
     <string name="err_certificate">TapoCtrl doesn\'t trust this camera\'s certificate: it isn\'t the one you confirmed, or none was confirmed on this phone. Nothing was sent. Remove the camera and add it again to check its certificate.</string>
     <string name="err_unsupported">This camera asks for a login TapoCtrl can\'t do yet. Nothing derived from your password was sent. Details: %1$s</string>
     <string name="status_certificate">Check certificate</string>
+    <string name="err_protocol_changed">TapoCtrl talked to this device with its newer protocol (KLAP) before, but now something at its address answers like older firmware. To keep your account safe, TapoCtrl doesn\'t switch to the older protocol and sent nothing. If you really put older firmware on it, remove the device and add it again.</string>
+    <string name="status_protocol_changed">Protocol changed</string>
     <string name="status_privacy_on">Privacy on</string>
     <string name="status_camera_on">Camera on</string>
     <string name="camera">Camera</string>

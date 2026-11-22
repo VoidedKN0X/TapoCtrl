@@ -2,6 +2,7 @@ package com.vknxworks.tapoctrl.data.settings
 
 import com.vknxworks.tapoctrl.data.SavedDevice
 import com.vknxworks.tapoctrl.net.LanAddress
+import com.vknxworks.tapoctrl.tapo.SavedProtocol
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -43,6 +44,11 @@ data class FileDevice(
     val type: String = "",
     val mac: String = "",
     val room: String = "",
+    /**
+     * "klap" when the device was seen speaking KLAP. Only that value is imported: it makes the device stricter
+     * (never switched to securePassthrough); a file can't mark a device as older firmware.
+     */
+    val protocol: String = "",
 )
 
 class SettingsFileException(val newer: Boolean) : Exception()
@@ -72,7 +78,9 @@ object SettingsFile {
             lockTimeout = s.lockTimeout.name,
             hideScreenshots = s.hideScreenshots,
             hideRecents = s.hideRecents,
-            devices = devices.map { FileDevice(it.ip, it.name, it.model, it.type, it.mac, it.room) },
+            devices = devices.map {
+                FileDevice(it.ip, it.name, it.model, it.type, it.mac, it.room, protocol = if (it.protocol == SavedProtocol.KLAP) SavedProtocol.KLAP else "")
+            },
         ),
     )
 
@@ -121,7 +129,10 @@ object SettingsFile {
                     rooms++
                 }
             } else if (list.size < MAX_DEVICES) {
-                list += SavedDevice(newId(), ip, clean(d.name, 64), clean(d.model, 32), clean(d.type, 48), mac, room)
+                list += SavedDevice(
+                    newId(), ip, clean(d.name, 64), clean(d.model, 32), clean(d.type, 48), mac, room,
+                    protocol = if (d.protocol == SavedProtocol.KLAP) SavedProtocol.KLAP else SavedProtocol.UNKNOWN,
+                )
                 added++
             }
         }

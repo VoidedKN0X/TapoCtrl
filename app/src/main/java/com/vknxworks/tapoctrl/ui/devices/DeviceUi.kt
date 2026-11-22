@@ -63,6 +63,7 @@ fun errorMessage(context: Context, e: TapoException): String = when (e) {
     is TapoException.NeedsPassword -> context.getString(R.string.err_needs_password)
     is TapoException.Locked -> e.seconds?.let { context.getString(R.string.err_locked_for, (it + 59) / 60) } ?: context.getString(R.string.err_locked)
     is TapoException.CertificateChanged -> context.getString(R.string.err_certificate)
+    is TapoException.ProtocolChanged -> context.getString(R.string.err_protocol_changed)
     is TapoException.Unsupported -> context.getString(R.string.err_unsupported, e.what)
 }
 
@@ -102,6 +103,7 @@ fun statusText(state: DeviceState?): Pair<String, Boolean> {
         state?.error is TapoException.WrongAccount || state?.error is TapoException.NoAccount ||
             state?.error is TapoException.AccountIncomplete || state?.error is TapoException.NeedsPassword -> ctx.getString(R.string.status_sign_in) to false
         state?.error is TapoException.CertificateChanged -> ctx.getString(R.string.status_certificate) to false
+        state?.error is TapoException.ProtocolChanged -> ctx.getString(R.string.status_protocol_changed) to false
         state?.error != null -> ctx.getString(R.string.status_offline) to false
         // Cameras: privacy mode on means the lens is covered (no video); off means the camera is watching.
         state?.camera != null -> when (state.camera.privacy) {

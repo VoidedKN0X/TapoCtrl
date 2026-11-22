@@ -148,6 +148,8 @@ internal object TpapCrypto {
      * no "rounds=" part). Returns the whole "$5$[rounds=N$]salt$hash" string.
      */
     fun sha256Crypt(key: ByteArray, salt: String, rounds: Int?, explicitRounds: Boolean = false): String {
+        // Callers refuse anything above CameraLogin.MAX_CRYPT_ROUNDS first; this is the last guard.
+        require((rounds ?: 5000) <= CameraLogin.MAX_CRYPT_ROUNDS) { "too many rounds" }
         val r = (rounds ?: 5000).coerceIn(1000, 999_999_999)
         val explicit = rounds != null && (rounds != 5000 || explicitRounds)
         val s = salt.take(16).toByteArray(Charsets.UTF_8)

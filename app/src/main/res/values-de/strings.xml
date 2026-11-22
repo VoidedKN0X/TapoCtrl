@@ -7,7 +7,10 @@
     <string name="app_lock_subtitle">Beim Öffnen von TapoCtrl nach einer App-PIN (und optional deinem Fingerabdruck) fragen.</string>
     <string name="app_lock_footer">TapoCtrl spricht nur mit Geräten in deinem Heimnetz. Es kontaktiert nie TP-Link oder einen anderen Server und hat keine Analysen und kein Tracking.</string>
     <string name="lock_prompt_subtitle">Deine Geräte</string>
-    <string name="lock_forgot_body">Die PIN kann nicht wiederhergestellt werden. TapoCtrl vergisst die Hashes deines Tapo-Kontos und deine Geräteliste, setzt seine Einstellungen zurück und schaltet die App-Sperre aus. Deine Steckdosen und Lampen selbst werden nicht verändert.</string>
+    <string name="lock_forgot_body">Die PIN kann nicht wiederhergestellt werden. TapoCtrl vergisst die Hashes deines Tapo-Kontos und deine Geräteliste, setzt seine Einstellungen zurück und schaltet die App-Sperre aus. Deine Steckdosen und Lampen selbst werden nicht verändert. Wenn dein Smartphone eine Displaysperre hat, bestätigst du zuerst damit.</string>
+    <string name="lock_reset_prompt_title">App-Sperre von TapoCtrl zurücksetzen</string>
+    <string name="lock_reset_prompt_subtitle">Bestätige mit der Displaysperre deines Smartphones, dass du es bist</string>
+    <string name="lock_reset_prompt_failed">Die Displaysperre konnte nicht angezeigt werden</string>
 
     <!-- Home -->
     <string name="home_title">Geräte</string>
@@ -353,6 +356,8 @@
     <string name="err_certificate">TapoCtrl vertraut dem Zertifikat dieser Kamera nicht: Es ist nicht das, das du bestätigt hast, oder auf diesem Smartphone wurde keines bestätigt. Es wurde nichts gesendet. Entferne die Kamera und füge sie erneut hinzu, um ihr Zertifikat zu prüfen.</string>
     <string name="err_unsupported">Diese Kamera verlangt eine Anmeldung, die TapoCtrl noch nicht kann. Es wurde nichts gesendet, das von deinem Passwort abgeleitet ist. Details: %1$s</string>
     <string name="status_certificate">Zertifikat prüfen</string>
+    <string name="err_protocol_changed">TapoCtrl hat mit diesem Gerät bisher über das neuere Protokoll (KLAP) gesprochen, aber jetzt antwortet etwas unter seiner Adresse wie ältere Firmware. Um dein Konto zu schützen, wechselt TapoCtrl nicht zum älteren Protokoll, und es wurde nichts gesendet. Wenn du wirklich ältere Firmware aufgespielt hast, entferne das Gerät und füge es erneut hinzu.</string>
+    <string name="status_protocol_changed">Protokoll geändert</string>
     <string name="status_privacy_on">Privatsphäre an</string>
     <string name="status_camera_on">Kamera an</string>
     <string name="camera">Kamera</string>

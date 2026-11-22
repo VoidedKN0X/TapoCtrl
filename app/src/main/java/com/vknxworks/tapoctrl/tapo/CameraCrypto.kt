@@ -68,6 +68,18 @@ internal object CameraLogin {
     class UnsupportedTransform(val what: String) : Exception(what)
 
     /**
+     * SHA-256-crypt rounds a camera may ask for. The C200 sends 5000; glibc allows up to 999 999 999, which would
+     * keep a CPU core busy for minutes and can't be stopped part-way. More than this stops the login instead.
+     */
+    const val MAX_CRYPT_ROUNDS = 1_000_000
+
+    private fun checkCryptRounds(rounds: Int?, extraCrypt: JsonObject?) {
+        if (rounds != null && rounds > MAX_CRYPT_ROUNDS) {
+            throw UnsupportedTransform("password transform ${describeExtraCrypt(extraCrypt)}, rounds=$rounds")
+        }
+    }
+
+    /**
      * The SPAKE2+ credential for [passcode] and the camera's `extra_crypt` (pytapo `apply_extra_crypt`, the
      * Tapo app's Spake2pExtraCryptBean as freeKC's tapo-v4-protocol documents it):
      * none: the passcode itself; password_shadow 1: MD5-crypt ("$1$"), 2: SHA-1 hex, 5: SHA-256-crypt ("$5$"),
@@ -90,12 +102,15 @@ internal object CameraLogin {
             5 -> {
                 val fromPrefix = cryptSalt(prefix, "$5$")
                 if (fromPrefix != null) {
+                    checkCryptRounds(fromPrefix.second, extraCrypt)
                     // "$5$[rounds=N$]salt$", as the C200 sends it: rounds only when the prefix names them (pytapo, glibc).
                     TpapCrypto.sha256Crypt(passcode.toByteArray(Charsets.UTF_8), fromPrefix.first, fromPrefix.second, explicitRounds = fromPrefix.second != null)
                 } else {
                     val salt = saltParam?.takeIf { it.isNotEmpty() }
                         ?: throw UnsupportedTransform("password transform ${describeExtraCrypt(extraCrypt)}, no salt")
-                    TpapCrypto.sha256Crypt(passcode.toByteArray(Charsets.UTF_8), salt, (params["passwd_rounds"] as? JsonPrimitive)?.content?.toIntOrNull())
+                    val rounds = (params["passwd_rounds"] as? JsonPrimitive)?.content?.toIntOrNull()
+                    checkCryptRounds(rounds, extraCrypt)
+                    TpapCrypto.sha256Crypt(passcode.toByteArray(Charsets.UTF_8), salt, rounds)
                 }
             }
             else -> throw UnsupportedTransform("password transform ${describeExtraCrypt(extraCrypt)}")

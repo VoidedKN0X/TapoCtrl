@@ -216,14 +216,35 @@ class PassthroughClient(
     }
 }
 
+/** Which protocol a plug or bulb is known to speak, as saved with the device ([SavedProtocol.KLAP] etc.). */
+object SavedProtocol {
+    const val UNKNOWN = ""
+    const val KLAP = "klap"
+    const val PASSTHROUGH = "passthrough"
+
+    /**
+     * May TapoCtrl switch from KLAP to securePassthrough when handshake1 says "no KLAP here"? Only for a device
+     * that has never been seen speaking KLAP. securePassthrough authenticates nothing about the device and sends
+     * login values derived from the account (with "Keep the password for older firmware" even the password), so a
+     * device that has answered KLAP is never downgraded: whatever now answers at its address may not be it.
+     */
+    fun mayFallBack(saved: String?, klapSeenHere: Boolean): Boolean = !klapSeenHere && saved != KLAP
+
+    /** Whether to save [seen] over [saved]: anything is learnt, but KLAP is never replaced by securePassthrough. */
+    fun mayRecord(saved: String?, seen: String): Boolean = saved != seen && (saved != KLAP || seen == KLAP)
+}
+
 /**
  * The connection to one plug, bulb, strip, switch or hub: KLAP first; when the device has no KLAP (older
  * firmware: handshake1 answers 404 or not 48 bytes, before anything else is sent), securePassthrough from then on.
+ * A device that has spoken KLAP before ([savedProtocol] says so, or this client saw it) is never switched to
+ * securePassthrough: [TapoException.ProtocolChanged] instead.
  */
 class SmartClient(
     val ip: Inet4Address,
     klapAccount: () -> List<AuthHash>,
     account: () -> AccountParts,
+    private val savedProtocol: () -> String? = { null },
     loginVersion: () -> Int?,
 ) : TapoCaller {
     private val klap = KlapClient(ip, klapAccount)
@@ -233,16 +254,36 @@ class SmartClient(
     var usesLegacy = false
         private set
 
+    /** A KLAP call succeeded on this connection (kept across [reset]: it's about the device, not the session). */
+    @Volatile
+    var klapSeen = false
+        private set
+
+    /** The protocol the last successful call used, or null before any. */
+    val protocol: String?
+        get() = when {
+            usesLegacy -> SavedProtocol.PASSTHROUGH
+            klapSeen -> SavedProtocol.KLAP
+            else -> null
+        }
+
     fun reset() {
         klap.reset()
         legacy.reset()
     }
 
     override suspend fun call(method: String, params: JsonObject?): JsonElement {
+        // The address now belongs to a device saved as KLAP (it moved here): KLAP again, never securePassthrough.
+        if (usesLegacy && savedProtocol() == SavedProtocol.KLAP) {
+            usesLegacy = false
+            legacy.reset()
+        }
         if (usesLegacy) return legacy.call(method, params)
         return try {
-            klap.call(method, params)
+            klap.call(method, params).also { klapSeen = true }
         } catch (e: TapoException.LegacyFirmware) {
+            // Nothing derived from the account goes over securePassthrough to an address where KLAP answered before.
+            if (!SavedProtocol.mayFallBack(savedProtocol(), klapSeen)) throw TapoException.ProtocolChanged()
             // KLAP stopped at handshake1, before the request was sent: the request goes once, over the older protocol.
             usesLegacy = true
             legacy.call(method, params)

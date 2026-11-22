@@ -5,7 +5,10 @@
     <string name="app_lock_subtitle">Vraag een pincode voor de app (en eventueel je vingerafdruk) wanneer je TapoCtrl opent.</string>
     <string name="app_lock_footer">TapoCtrl praat alleen met toestellen op je thuisnetwerk. Het neemt nooit contact op met TP-Link of een andere server, en heeft geen analytics of tracking.</string>
     <string name="lock_prompt_subtitle">Je toestellen</string>
-    <string name="lock_forgot_body">De pincode kan niet worden teruggehaald. TapoCtrl vergeet de hashes van je Tapo-account en je lijst met toestellen, zet zijn instellingen terug en zet de app-vergrendeling uit. Je stekkers en lampen zelf veranderen niet.</string>
+    <string name="lock_forgot_body">De pincode kan niet worden teruggehaald. TapoCtrl vergeet de hashes van je Tapo-account en je lijst met toestellen, zet zijn instellingen terug en zet de app-vergrendeling uit. Je stekkers en lampen zelf veranderen niet. Als je telefoon een schermvergrendeling heeft, bevestig je eerst daarmee.</string>
+    <string name="lock_reset_prompt_title">App-vergrendeling van TapoCtrl terugzetten</string>
+    <string name="lock_reset_prompt_subtitle">Gebruik de schermvergrendeling van je telefoon om te bevestigen dat jij het bent</string>
+    <string name="lock_reset_prompt_failed">De schermvergrendeling kon niet getoond worden</string>
     <string name="home_title">Toestellen</string>
     <plurals name="device_count">
         <item quantity="one">%1$d toestel</item>
@@ -319,6 +322,8 @@
     <string name="err_certificate">TapoCtrl vertrouwt het certificaat van deze camera niet: het is niet het certificaat dat je bevestigd hebt, of er werd er op deze telefoon geen bevestigd. Er werd niets verstuurd. Verwijder de camera en voeg hem opnieuw toe om het certificaat te controleren.</string>
     <string name="err_unsupported">Deze camera vraagt een aanmelding die TapoCtrl nog niet kan. Er werd niets verstuurd dat van je wachtwoord is afgeleid. Details: %1$s</string>
     <string name="status_certificate">Certificaat controleren</string>
+    <string name="err_protocol_changed">TapoCtrl praatte eerder met dit toestel via het nieuwere protocol (KLAP), maar nu antwoordt iets op zijn adres zoals oudere firmware. Om je account te beschermen schakelt TapoCtrl niet over naar het oudere protocol en werd er niets verstuurd. Heb je er echt oudere firmware op gezet, verwijder het toestel dan en voeg het opnieuw toe.</string>
+    <string name="status_protocol_changed">Protocol veranderd</string>
     <string name="status_privacy_on">Privacy aan</string>
     <string name="status_camera_on">Camera aan</string>
     <string name="camera">Camera</string>

@@ -46,7 +46,7 @@ jobs:
           # The same tasks as the build, code scanning and the dependency audit. Without CI set, the release
           # build is signed with the debug key here; it needs no secrets and resolves the same dependencies.
           env -u CI -u GITHUB_ACTIONS ./gradlew --no-daemon --write-verification-metadata sha256 \
-            assembleRelease assembleDebug :app:dependencies --configuration releaseRuntimeClasspath > /dev/null
+            assembleRelease assembleDebug :app:testDebugUnitTest :app:dependencies --configuration releaseRuntimeClasspath > /dev/null
 
       - name: Print the file
         run: |

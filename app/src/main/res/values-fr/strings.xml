@@ -7,7 +7,10 @@
     <string name="app_lock_subtitle">Demander un code PIN (et éventuellement votre empreinte) à l\'ouverture de TapoCtrl.</string>
     <string name="app_lock_footer">TapoCtrl communique uniquement avec les appareils de votre réseau domestique. Il ne contacte jamais TP-Link ni aucun autre serveur, et ne contient ni statistiques ni pistage.</string>
     <string name="lock_prompt_subtitle">Vos appareils</string>
-    <string name="lock_forgot_body">Le code PIN ne peut pas être récupéré. TapoCtrl oubliera les hachages de votre compte Tapo et votre liste d\'appareils, réinitialisera ses paramètres et désactivera le verrouillage. Vos prises et ampoules elles-mêmes ne sont pas modifiées.</string>
+    <string name="lock_forgot_body">Le code PIN ne peut pas être récupéré. TapoCtrl oubliera les hachages de votre compte Tapo et votre liste d\'appareils, réinitialisera ses paramètres et désactivera le verrouillage. Vos prises et ampoules elles-mêmes ne sont pas modifiées. Si votre téléphone a un verrouillage d\'écran, vous confirmerez d\'abord avec celui-ci.</string>
+    <string name="lock_reset_prompt_title">Réinitialiser le verrouillage de TapoCtrl</string>
+    <string name="lock_reset_prompt_subtitle">Utilisez le verrouillage d\'écran de votre téléphone pour confirmer que c\'est bien vous</string>
+    <string name="lock_reset_prompt_failed">Impossible d\'afficher le verrouillage d\'écran</string>
 
     <!-- Home -->
     <string name="home_title">Appareils</string>
@@ -353,6 +356,8 @@
     <string name="err_certificate">TapoCtrl ne fait pas confiance au certificat de cette caméra : ce n\'est pas celui que vous avez confirmé, ou aucun n\'a été confirmé sur ce téléphone. Rien n\'a été envoyé. Retirez la caméra et ajoutez-la à nouveau pour vérifier son certificat.</string>
     <string name="err_unsupported">Cette caméra demande une connexion que TapoCtrl ne sait pas encore faire. Rien de dérivé de votre mot de passe n\'a été envoyé. Détails : %1$s</string>
     <string name="status_certificate">Vérifier le certificat</string>
+    <string name="err_protocol_changed">TapoCtrl communiquait avec cet appareil par son protocole récent (KLAP), mais maintenant quelque chose à son adresse répond comme un ancien firmware. Pour protéger votre compte, TapoCtrl ne passe pas à l\'ancien protocole et rien n\'a été envoyé. Si vous avez vraiment installé un ancien firmware, retirez l\'appareil et ajoutez-le à nouveau.</string>
+    <string name="status_protocol_changed">Protocole modifié</string>
     <string name="status_privacy_on">Confidentialité activée</string>
     <string name="status_camera_on">Caméra active</string>
     <string name="camera">Caméra</string>
