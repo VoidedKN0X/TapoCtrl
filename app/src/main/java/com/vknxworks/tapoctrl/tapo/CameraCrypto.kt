@@ -73,7 +73,7 @@ internal object CameraLogin {
      */
     const val MAX_CRYPT_ROUNDS = 1_000_000
 
-    private fun checkCryptRounds(rounds: Int?, extraCrypt: JsonObject?) {
+    private fun checkCryptRounds(rounds: Int?, extraCrypt: JsonObject) {
         if (rounds != null && rounds > MAX_CRYPT_ROUNDS) {
             throw UnsupportedTransform("password transform ${describeExtraCrypt(extraCrypt)}, rounds=$rounds")
         }
